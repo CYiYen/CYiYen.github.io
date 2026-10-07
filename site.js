@@ -47,10 +47,36 @@
   });
 
   // Edit Mode：按 Esc（或焦點不在連結上時按 Tab）回到首頁的 3D 視窗，並選取這件作品
-  var mb=document.querySelector('.modebar');
-  if(mb)window.addEventListener('keydown',function(e){
-    var ae=document.activeElement,onBody=!ae||ae===document.body;
-    if(e.key==='Escape'||(e.key==='Tab'&&!e.shiftKey&&onBody)){e.preventDefault();location.href=mb.dataset.back}});
+  var mb=document.querySelector('.modebar'),main=document.querySelector('main.work'),de=document.documentElement;
+  // 離開作品頁：畫面從中心收成圓，回到 3D 首頁（首頁會把鏡頭從這件作品前面往後拉）
+  function leave(href){
+    if(!main||!main.dataset.cover){location.href=href;return}
+    try{sessionStorage.setItem('pf-back',JSON.stringify({slug:main.dataset.slug,t:Date.now()}))}catch(e){}
+    var ov=document.createElement('div');ov.className='trans';ov.style.setProperty('--x','50%');ov.style.setProperty('--y','50%');ov.style.transitionDuration='.55s';
+    ov.innerHTML='<img src="'+main.dataset.cover+'" alt="" style="object-position:'+main.dataset.pos+'"><div class="tt"><span>Object Mode</span><b>'+main.dataset.title+'</b></div>';
+    document.body.appendChild(ov);requestAnimationFrame(function(){requestAnimationFrame(function(){ov.classList.add('open')})});
+    setTimeout(function(){location.href=href},600)}
+  if(mb){
+    window.addEventListener('keydown',function(e){
+      var ae=document.activeElement,onBody=!ae||ae===document.body;
+      if(e.key==='Escape'||(e.key==='Tab'&&!e.shiftKey&&onBody)){e.preventDefault();leave(mb.dataset.back)}});
+    var bk=mb.querySelector('.back');if(bk)bk.addEventListener('click',function(e){e.preventDefault();leave(mb.dataset.back)});
+  }
+  window.addEventListener('pageshow',function(){document.querySelectorAll('.trans').forEach(function(x){x.remove()})});
+  // 從 3D 首頁進來：滿版封面收進版面的主圖位置，內容依序浮上來
+  if(main&&de.classList.contains('intro')){
+    try{sessionStorage.removeItem('pf-enter')}catch(e){}
+    var c=document.createElement('div');c.className='cover-in';
+    c.innerHTML='<img src="'+main.dataset.cover+'" alt="" style="object-position:'+main.dataset.pos+'"><div class="tt"><span>Edit Mode</span><b>'+main.dataset.title+'</b></div>';
+    document.body.appendChild(c);
+    var tgt=main.querySelector('.poster,.bleed,.sp-media,.masonry,.media');
+    setTimeout(function(){
+      var W=innerWidth,H=innerHeight,r=tgt?tgt.getBoundingClientRect():{top:H*.3,left:24,right:W-24,bottom:H*.85};
+      var t=Math.max(0,r.top),l=Math.max(0,r.left),b=Math.max(0,H-Math.min(H,r.bottom)),rr=Math.max(0,W-Math.min(W,r.right));
+      c.querySelector('.tt').style.opacity=0;c.style.clipPath='inset('+t+'px '+rr+'px '+b+'px '+l+'px)';c.style.opacity=0;
+      de.classList.remove('intro');de.classList.add('intro-run');
+      setTimeout(function(){c.remove()},1300);setTimeout(function(){de.classList.remove('intro-run')},1700)},250);
+  }
 
   // 分隔線：游標靠近時在該處斷開
   var rules=[].slice.call(document.querySelectorAll('.rule'));

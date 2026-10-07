@@ -113,7 +113,10 @@ W.forEach((w,i)=>{
     if(w.slug==='paper-shell-echo')it.meshes.forEach(m=>{if(m.name==='Plane'){m.material.side=THREE.DoubleSide;m.material.opacity=0.16;m.material.depthWrite=false;m.userData.ghost=true}});  // 房間牆面半透明，看得到裡面的紙殼
     if(CLAY)it.meshes.forEach(m=>{m.castShadow=true});
     if(FADE)it.meshes.forEach(m=>{const e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry,40),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.07}));m.add(e)});  // 沒被照到時只剩淡淡輪廓
-    stats();if(pending===w.slug)select(it,true)};
+    stats();if(pending===w.slug){let back=null;try{back=JSON.parse(sessionStorage.getItem('pf-back')||'null');sessionStorage.removeItem('pf-back')}catch(e){}
+      if(back&&back.slug===w.slug&&Date.now()-back.t<6000){select(it,false);frameOn(it,0.45);camera.position.copy(anim.p1);controls.target.copy(anim.t1);anim=null;controls.update();camera.updateMatrixWorld();
+        const ov=overlay(it,'open back');requestAnimationFrame(()=>requestAnimationFrame(()=>{ov.classList.remove('open');frameOn(it,1)}));setTimeout(()=>{ov.remove();if(!anim)frameOn(it,1)},800)}
+      else select(it,true)}};
   const wrap=g=>{if(w.slug!=='compound-eye')return g.scene;                       // 科技複眼：一根柱子，柱頂放作者捏的人臉
     const grp=new THREE.Group(),face=g.scene;if(w.rot)face.rotation.y=THREE.MathUtils.degToRad(w.rot);w.rot=0;
     const H=2.1,R=0.3;                                                              // 臉嵌在柱身中間偏上，前半部從柱面凸出
@@ -180,8 +183,18 @@ function homePos(){const half=span*GAP/2+2.6,hf=Math.atan(Math.tan(THREE.MathUti
   return new THREE.Vector3(0,Math.sin(el)*d+0.8,Math.cos(el)*d)}
 function frameAll(){anim={t:0,dur:0.9,p0:camera.position.clone(),t0:controls.target.clone(),p1:homePos(),t1:new THREE.Vector3(0,0.8,0)}}
 // 進入 Edit Mode：鏡頭推近，畫面切到作品頁
-function enter(it){if(!it)return;$('modeLabel').innerHTML='<b>Edit Mode</b>　進入作品　▾';document.body.classList.add('entering');
-  const go=()=>{location.href=it.w.slug+'.html'};frameOn(it,0.45,go);setTimeout(go,1200)}  // 保底：動畫被瀏覽器暫停時也會換頁
+// 進入作品（Edit Mode）的轉場：模型切成線框 → 鏡頭推近 → 從模型位置展開圓形，露出作品照片與名稱 → 換頁（作品頁會接著把照片收進版面）
+let entering=false;
+function screenOf(it){const b=new THREE.Box3().setFromObject(it.holder),c=b.getCenter(new THREE.Vector3()).project(camera),r=view.getBoundingClientRect();
+  return [r.left+(c.x+1)/2*r.width,r.top+(1-c.y)/2*r.height]}
+function overlay(it,cls){const [x,y]=screenOf(it),ov=document.createElement('div');ov.className='trans'+(cls?' '+cls:'');ov.style.setProperty('--x',x+'px');ov.style.setProperty('--y',y+'px');
+  ov.innerHTML=`<img src="${it.w.img}" alt="" style="object-position:${it.w.pos||'50% 50%'}"><div class="tt"><span>Edit Mode</span><b>${it.w.name}</b></div>`;document.body.appendChild(ov);return ov}
+function enter(it){if(!it||entering)return;entering=true;$('modeLabel').innerHTML='<b>Edit Mode</b>　進入作品　▾';
+  it.meshes.forEach(m=>{m.material.wireframe=true});                          // 像按下 Tab：先看到線框
+  frameOn(it,0.45);const ov=overlay(it);
+  setTimeout(()=>ov.classList.add('open'),260);
+  try{sessionStorage.setItem('pf-enter',JSON.stringify({slug:it.w.slug,t:Date.now()}))}catch(e){}
+  setTimeout(()=>{location.href=it.w.slug+'.html'},1050)}
 
 // ---------------- 工具與輸入
 const brush=$('brush');
@@ -271,7 +284,7 @@ function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
   renderer.render(scene,camera);gizmo();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
 // 從作品頁按 Tab 回來時，頁面可能是從快取還原的，重設進場狀態
-window.addEventListener('pageshow',()=>{document.body.classList.remove('entering');$('modeLabel').innerHTML='<b>Object Mode</b>　瀏覽　▾'});
+window.addEventListener('pageshow',()=>{document.body.classList.remove('entering');entering=false;document.querySelectorAll('.trans').forEach(e=>e.remove());items.forEach(it=>it.meshes.forEach(m=>{m.material.wireframe=false}));$('modeLabel').innerHTML='<b>Object Mode</b>　瀏覽　▾'});
 
 // 第一次進站：顯示三步驟說明（看過就記住，不再出現）
 (function(){const g=$('guide');let seen=false;try{seen=localStorage.getItem('pf-guide')==='1'}catch(e){}
