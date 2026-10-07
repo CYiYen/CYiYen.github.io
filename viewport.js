@@ -49,14 +49,14 @@ function toyModel(slug){
   const box=(w,h,d,r=0.08)=>new RoundedBoxGeometry(w,h,d,8,Math.min(r,w/2-0.001,h/2-0.001,d/2-0.001));
   const ball=(r)=>new THREE.SphereGeometry(r,48,32), cap=(r,l)=>new THREE.CapsuleGeometry(r,l,8,24);
   const person=(x,y,z,s=1)=>{add(cap(0.13*s,0.32*s),x,y+0.29*s,z);add(ball(0.13*s),x,y+0.66*s,z)};
-  if(slug==='beacon-silence'){            // 依平面圖重建（不含展牆）：6.5×2 公尺範圍、七組發射端交錯立在兩側、對面是太陽能接收板、部分在滑軌上
-    const L=6.6,Wd=2.2,Y=0.9;add(box(L,0.05,Wd,0.02),0,0.025,0);
-    const post=(x,z)=>{add(new THREE.CylinderGeometry(0.018,0.018,Y-0.05,10),x,0.05+(Y-0.05)/2,z,DARK());add(new THREE.CylinderGeometry(0.09,0.09,0.02,20),x,0.06,z,DARK())};
+  if(slug==='beacon-silence'){            // 依平面圖重建（不含展牆）：發射端在膝蓋高度，光束往對面斜下方打到低處的太陽能接收板；七組交錯、部分在滑軌上
+    const L=6.6,Wd=2.2,YE=0.5,YR=0.14;add(box(L,0.05,Wd,0.02),0,0.025,0);
+    const post=(x,z,h)=>{add(new THREE.CylinderGeometry(0.018,0.018,h-0.05,10),x,0.05+(h-0.05)/2,z,DARK());add(new THREE.CylinderGeometry(0.08,0.08,0.02,20),x,0.06,z,DARK())};
     for(let k=0;k<7;k++){const x=-2.1+k*0.7,s=k%2?1:-1,z=s*(Wd/2-0.12);
-      post(x,z);const e=add(box(0.16,0.11,0.18,0.03),x,Y,z,DARK());e.name='Motor'+k;               // 雷射發射端
-      post(x,-z);const r=add(box(0.24,0.18,0.025,0.01),x,Y,-z,DARK());r.name='Recv'+k;            // 對面的太陽能接收板
-      if(k%2===0)add(box(0.7,0.03,0.05,0.01),x,0.06,z,DARK())}                                  // 地上的滑軌（部分發射端會移動）
-    person(-2.95,0.05,0,1.25)}
+      post(x,z,YE);const e=add(box(0.16,0.11,0.18,0.03),x,YE,z,DARK());e.name='Motor'+k;e.rotation.x=s*0.12;   // 雷射發射端，略朝下
+      post(x,-z,YR);const r=add(box(0.26,0.2,0.025,0.01),x,YR+0.04,-z,DARK());r.name='Recv'+k;r.rotation.x=s*0.6;  // 對面低處的太陽能接收板，斜面朝向光
+      if(k%2===0)add(box(0.7,0.03,0.05,0.01),x,0.06,z,DARK())}                                              // 地上的滑軌
+    person(-2.95,0.05,0,2.1)}                                                                                 // 約 166 公分的人，裝置只到膝蓋
   else if(slug==='soundscape-city'){      // 格狀底板上，三個錄音點（風、燈塔、海）各帶聲波，大樓依離錄音點的遠近升起
     add(box(2.4,0.08,2.4,0.03),0,0.04,0);
     const grid=new THREE.GridHelper(2.3,12,0x6f6f6f,0x8a8a8a);grid.position.y=0.082;grid.material.transparent=true;grid.material.opacity=0.45;g.add(grid);
@@ -106,7 +106,7 @@ W.forEach((w,i)=>{
   if(CLAY)plinth.material=new THREE.MeshMatcapMaterial({matcap:MATCAP,color:0xe9e2d8});
   plinth.position.y=PLINTH/2;plinth.receiveShadow=true;holder.add(plinth);
   const it={w,holder,root:null,meshes:[],orig:new Map(),edges:null,label:null,beams:[]};items.push(it);
-  const done=root=>{if(w.model)root.traverse(o=>{if(o.isMesh&&!o.material.map)o.material=SOLID()});if(w.rot)root.rotation.y=THREE.MathUtils.degToRad(w.rot);normalize(root,wide?3.3:2.5);root.position.y+=PLINTH;holder.add(root);holder.updateMatrixWorld(true);it.root=root;  // 先更新位置，外框與鏡頭才算得對
+  const done=root=>{if(w.model)root.traverse(o=>{if(o.isMesh&&!o.material.map)o.material=SOLID()});if(w.rot)root.rotation.y=THREE.MathUtils.degToRad(w.rot);normalize(root,wide?3.3:2.5,w.slug==='compound-eye'?1.9:2.3);root.position.y+=PLINTH;holder.add(root);holder.updateMatrixWorld(true);it.root=root;  // 先更新位置，外框與鏡頭才算得對
     
     root.traverse(o=>{if(o.isMesh){it.meshes.push(o);o.userData.item=it;it.orig.set(o,o.geometry.attributes.position.array.slice())}});
     if(w.slug==='beacon-silence'){it.meshes.forEach(m=>{if(/Wall/i.test(m.name)){m.material.side=THREE.BackSide;m.material.color.set(0x8e8e8e)}});makeBeams(it)}
@@ -114,7 +114,14 @@ W.forEach((w,i)=>{
     if(CLAY)it.meshes.forEach(m=>{m.castShadow=true});
     if(FADE)it.meshes.forEach(m=>{const e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry,40),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.07}));m.add(e)});  // 沒被照到時只剩淡淡輪廓
     stats();if(pending===w.slug)select(it,true)};
-  if(w.model)loader.load(w.model,g=>done(g.scene),undefined,()=>done(toyModel(w.slug)));else queueMicrotask(()=>done(toyModel(w.slug)));  // 等整份程式（介面元素）準備好再建
+  const wrap=g=>{if(w.slug!=='compound-eye')return g.scene;                       // 科技複眼：一根柱子，柱頂放作者捏的人臉
+    const grp=new THREE.Group(),face=g.scene;if(w.rot)face.rotation.y=THREE.MathUtils.degToRad(w.rot);w.rot=0;
+    const H=2.1,R=0.3;                                                              // 臉嵌在柱身中間偏上，前半部從柱面凸出
+    const b=new THREE.Box3().setFromObject(face),sz=new THREE.Vector3();b.getSize(sz);face.scale.multiplyScalar(0.56/sz.y);
+    const b2=new THREE.Box3().setFromObject(face),c=new THREE.Vector3(),d=new THREE.Vector3();b2.getCenter(c);b2.getSize(d);
+    face.position.add(new THREE.Vector3(-c.x,H*0.62-c.y,(R+d.z*0.32)-b2.max.z));
+    const col=new THREE.Mesh(new THREE.CylinderGeometry(R*0.92,R,H,48),SOLID());col.position.y=H/2;grp.add(col);grp.add(face);return grp};
+  if(w.model)loader.load(w.model,g=>done(wrap(g)),undefined,()=>done(toyModel(w.slug)));else queueMicrotask(()=>done(toyModel(w.slug)));  // 等整份程式（介面元素）準備好再建
 });
 // Beacon Silence：依模型裡發射端（Motor）的位置畫出橫越走道的光束
 function makeBeams(it){const ms=[];it.root.traverse(o=>{if(o.isMesh&&/Motor/i.test(o.name))ms.push(o)});
