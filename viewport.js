@@ -113,9 +113,9 @@ W.forEach((w,i)=>{
     if(w.slug==='paper-shell-echo')it.meshes.forEach(m=>{if(m.name==='Plane'){m.material.side=THREE.DoubleSide;m.material.opacity=0.16;m.material.depthWrite=false;m.userData.ghost=true}});  // 房間牆面半透明，看得到裡面的紙殼
     if(CLAY)it.meshes.forEach(m=>{m.castShadow=true});
     if(FADE)it.meshes.forEach(m=>{const e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry,40),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.07}));m.add(e)});  // 沒被照到時只剩淡淡輪廓
-    stats();if(pending===w.slug){let back=null;try{back=JSON.parse(sessionStorage.getItem('pf-back')||'null');sessionStorage.removeItem('pf-back')}catch(e){}
-      if(back&&back.slug===w.slug&&Date.now()-back.t<6000){select(it,false);frameOn(it,0.45);camera.position.copy(anim.p1);controls.target.copy(anim.t1);anim=null;controls.update();camera.updateMatrixWorld();
-        const ov=overlay(it,'open back');requestAnimationFrame(()=>requestAnimationFrame(()=>{ov.classList.remove('open');frameOn(it,1)}));setTimeout(()=>{ov.remove();if(!anim)frameOn(it,1)},800)}
+    stats();if(pending===w.slug){
+      if(window.PF_BACK===w.slug&&!backDone){select(it,false);frameOn(it,0.45);camera.position.copy(anim.p1);controls.target.copy(anim.t1);anim=null;controls.update();camera.updateMatrixWorld();
+        revealBack(it)}
       else select(it,true)}};
   const wrap=g=>{if(w.slug!=='compound-eye')return g.scene;                       // 科技複眼：一根柱子，柱頂放作者捏的人臉
     const grp=new THREE.Group(),face=g.scene;if(w.rot)face.rotation.y=THREE.MathUtils.degToRad(w.rot);w.rot=0;
@@ -137,24 +137,26 @@ function makeBeams(it){const ms=[];it.root.traverse(o=>{if(o.isMesh&&/Motor/i.te
 
 // ---------------- 介面
 const $=id=>document.getElementById(id),tree=$('tree'),labels=$('labels'),track=$('track'),pbody=$('pbody'),phead=$('phead');
-tree.querySelectorAll('[data-i]').forEach(el=>el.onclick=()=>select(items[+el.dataset.i],true));
+tree.querySelectorAll('[data-i]').forEach(el=>{el.onclick=()=>select(items[+el.dataset.i],true);
+  el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click()}}});   // 鍵盤也能選作品
 items.forEach(it=>{const s=document.createElement('span');s.textContent=it.w.name;labels.appendChild(s);it.label=s});
 const Y0=D.y0,Y1=D.y1,pct=y=>(y-Y0)/(Y1-Y0)*100;
 for(let y=Y0;y<=Y1;y++){const t=document.createElement('span');t.className='tick';t.style.left=pct(y)+'%';t.textContent=y;track.appendChild(t)}
-const keys=W.map((w,i)=>{const k=document.createElement('i');k.className='key';const n=W.filter((x,j)=>x.year===w.year&&j<i).length;
+const keys=W.map((w,i)=>{const k=document.createElement('i');k.className='key';k.tabIndex=0;k.setAttribute('role','button');k.setAttribute('aria-label',w.name+'，'+w.year);
+  k.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();k.click()}});const n=W.filter((x,j)=>x.year===w.year&&j<i).length;
   k.style.left=`calc(${pct(w.year)}% + ${n*14}px)`;k.title=w.name;k.onclick=()=>select(items[i],true);track.appendChild(k);return k});
 
 const rows=r=>r.filter(x=>x[1]).map(([k,v])=>`<div class="row"><dt>${k}</dt><dd>${v}</dd></div>`).join('');
 function props(){
   if(!selected){pbody.innerHTML=`<div class="ptitle">${D.name}<small>${D.nameEn}</small></div>
     <div class="sec"><h4>關於</h4><div class="in"><p class="para">${D.claim}<span class="en">${D.claimEn}</span></p><a class="btn" href="about.html">開啟簡歷　About →</a></div></div>
-    <div class="sec"><h4>怎麼看</h4><div class="in hint-list mono">拖曳：轉動畫面　滾輪：放大縮小<br>點一件作品：看介紹<br>再點一次：進入作品<br>「捏捏看」：按住拖曳可以推動模型表面，放開會彈回原狀</div></div>`;return}
+    <div class="sec"><h4>操作</h4><div class="in hint-list mono">拖曳：旋轉視角　滾輪：縮放<br>點選作品：顯示作品資訊<br>再次點選：開啟作品頁<br>雕塑工具：按住拖曳可推動模型表面，放開後自動復原</div></div>`;return}
   const w=selected.w,i=items.indexOf(selected),pv=items[(i-1+items.length)%items.length].w,nx=items[(i+1)%items.length].w;
   pbody.innerHTML=`<div class="ptitle">${w.name}<small>${w.sub} · ${w.year}</small></div>
-  <div class="sec"><div class="in"><p class="para">${w.tag}</p><a class="btn primary" href="${w.slug}.html">進入作品 →</a><p class="mono note">也可以再點一次模型，或按鍵盤 Tab。</p>
+  <div class="sec"><div class="in"><p class="para">${w.tag}</p><a class="btn primary" href="${w.slug}.html">開啟作品頁 →</a><p class="mono note">亦可再次點選模型或按 Tab 鍵。</p>
     <div class="pn2 mono"><button data-go="-1">← ${pv.name}</button><button data-go="1">${nx.name} →</button></div></div></div>
-  ${w.slug==='beacon-silence'?`<div class="sec"><h4>聽聽看</h4><div class="in"><button class="btn${playing?' on':''}" id="listen">${playing?'■ 停止聲音':'▶ 聆聽 Beacon Silence 的七個聲部'}</button><p class="mono note">開啟後，把滑鼠移到白色光束上，就會擋住那道光，那個聲部跟著安靜，跟展場裡一樣。</p></div></div>`:''}
-  <div class="sec"><h4>基本資料</h4><div class="in">${rows([['類型',w.kind],['媒材',w.medium],['展出',w.shown],['分工',w.role],['模型',w.model?(w.modelNote||'作者的原始 Blender 模型'):'示意模型（這件作品沒有 3D 檔）']])}</div></div>
+  ${w.slug==='beacon-silence'?`<div class="sec"><h4>聲音</h4><div class="in"><button class="btn${playing?' on':''}" id="listen">${playing?'■ 停止播放':'▶ 播放 Beacon Silence 七聲部'}</button><p class="mono note">播放時，游標移至光束上即可遮斷該道光，對應聲部隨之靜音，與展場中的機制相同。</p></div></div>`:''}
+  <div class="sec"><h4>基本資料</h4><div class="in">${rows([['類型',w.kind],['媒材',w.medium],['展出',w.shown],['分工',w.role],['模型',w.model?(w.modelNote||'作者的原始 Blender 模型'):'示意模型（本作無原始 3D 檔）']])}</div></div>
   <div class="sec"><h4>照片</h4><div class="in"><img src="${w.img}" alt="" loading="lazy"></div></div>`;
   pbody.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>select(items[(i+(+b.dataset.go)+items.length)%items.length],true));
   const b=$('listen');if(b)b.onclick=toggleSound;
@@ -172,7 +174,7 @@ function select(it,fly){
   tree.querySelectorAll('[data-i]').forEach(el=>el.classList.toggle('on',items[+el.dataset.i]===it));
   keys.forEach((k,i)=>k.classList.toggle('on',items[i]===it));
   $('vsel').textContent=it?it.w.name:'無';
-  if(it){outline(it,true);phead.style.left=pct(it.w.year)+'%';phead.dataset.y=it.w.year;if(fly)frameOn(it,1);history.replaceState(null,'','#sel='+it.w.slug)}
+  if(it){outline(it,true);phead.style.left=pct(it.w.year)+'%';phead.dataset.y=it.w.year;if(fly)frameOn(it,1);history.replaceState(null,'','#sel='+it.w.slug);prefetch(it.w.slug)}
   else history.replaceState(null,'',location.pathname);
   props();stats();
 }
@@ -187,18 +189,38 @@ function frameAll(){anim={t:0,dur:0.9,p0:camera.position.clone(),t0:controls.tar
 let entering=false;
 function screenOf(it){const b=new THREE.Box3().setFromObject(it.holder),c=b.getCenter(new THREE.Vector3()).project(camera),r=view.getBoundingClientRect();
   return [r.left+(c.x+1)/2*r.width,r.top+(1-c.y)/2*r.height]}
-function overlay(it,cls){const [x,y]=screenOf(it),ov=document.createElement('div');ov.className='trans'+(cls?' '+cls:'');ov.style.setProperty('--x',x+'px');ov.style.setProperty('--y',y+'px');
-  ov.innerHTML=`<img src="${it.w.img}" alt="" style="object-position:${it.w.pos||'50% 50%'}"><div class="tt"><span>Edit Mode</span><b>${it.w.name}</b></div>`;document.body.appendChild(ov);return ov}
-function enter(it){if(!it||entering)return;entering=true;$('modeLabel').innerHTML='<b>Edit Mode</b>　進入作品　▾';
+// 每件作品的轉場動態不同（trans.js）：Beacon 光帶、紙殼迴聲聲波、Solitude 窺孔、音景城市方塊、科技複眼小眼、Membrane 光暈
+const COV=window.PF_COVERS||{};
+function runEnter(slug,x,y){
+  const c=COV[slug];let gone=false;const go=()=>{if(gone)return;gone=true;location.href=slug+'.html'};
+  try{sessionStorage.setItem('pf-enter',JSON.stringify({slug,t:Date.now()}))}catch(e){}
+  if(!window.PFX||!c||PFX.reduce){go();return}
+  PFX.ready(c[0],400).then(()=>{const ov=PFX.build({slug,src:c[0],pos:c[1],title:c[2],x,y,label:'Edit Mode'});PFX.play(ov,'cover').then(()=>setTimeout(go,40))});
+  setTimeout(go,2600)}                                                         // 分頁在背景時動畫不會跑，保底換頁
+function enter(it){if(!it||entering)return;entering=true;$('modeLabel').innerHTML='<b>Edit Mode</b>　作品頁　▾';
   it.meshes.forEach(m=>{m.material.wireframe=true});                          // 像按下 Tab：先看到線框
-  frameOn(it,0.45);const ov=overlay(it);
-  setTimeout(()=>ov.classList.add('open'),260);
-  try{sessionStorage.setItem('pf-enter',JSON.stringify({slug:it.w.slug,t:Date.now()}))}catch(e){}
-  setTimeout(()=>{location.href=it.w.slug+'.html'},1050)}
+  const [x,y]=screenOf(it);frameOn(it,0.45);runEnter(it.w.slug,x,y)}
+// 從作品頁回來：封面停在畫面上，倒放同一段動態，收回這件作品的模型
+let backDone=false;
+function revealBack(it){if(backDone)return;backDone=true;
+  const hold=$('backHold'),slug=window.PF_BACK,c=COV[slug],done=()=>{hold&&hold.remove();document.documentElement.classList.remove('back-hold')};
+  if(!window.PFX||!c){done();return}
+  const [x,y]=it?screenOf(it):[innerWidth/2,innerHeight/2];
+  const ov=PFX.build({slug,src:c[0],pos:c[1],title:c[2],x,y,label:'Object Mode'});PFX.play(ov,'full');done();
+  requestAnimationFrame(()=>{if(it)frameOn(it,1);PFX.play(ov,'reveal').then(()=>ov.remove())});setTimeout(()=>ov.remove(),2600)}
+if(window.PF_BACK){const in3d=W.some(w=>w.slug===window.PF_BACK&&pending===w.slug);
+  setTimeout(()=>revealBack(null),in3d?3500:60)}                               // 模型太慢或不是 3D 作品：直接在畫面中央倒放
+// 首頁上所有通往作品頁的連結（右欄按鈕、Outliner）都走同一套轉場
+document.addEventListener('click',e=>{const a=e.target.closest('a[href$=".html"]');if(!a||e.defaultPrevented||e.button||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+  const slug=a.getAttribute('href').replace(/\.html$/,''),it=items.find(x=>x.w.slug===slug);
+  if(it){e.preventDefault();if(selected!==it)select(it,false);enter(it)}else if(COV[slug]&&!entering){e.preventDefault();entering=true;runEnter(slug,e.clientX,e.clientY)}});
+// 選取時先預載作品頁與封面，換頁更快
+const pre=new Set();function prefetch(slug){if(pre.has(slug)||!COV[slug])return;pre.add(slug);
+  const l=document.createElement('link');l.rel='prefetch';l.href=slug+'.html';document.head.appendChild(l);if(window.PFX)PFX.ready(COV[slug][0],1)}
 
 // ---------------- 工具與輸入
 const brush=$('brush');
-const BASE_HINT='拖曳轉動畫面　·　點作品看介紹　·　再點一次進入作品',SCULPT_HINT='捏捏看：點一件作品對準它，再按住拖曳推它的表面（放開會彈回）';
+const BASE_HINT='拖曳：旋轉視角　·　點選：作品資訊　·　再次點選：開啟作品頁',SCULPT_HINT='雕塑工具：點選作品以對準，再按住拖曳推動表面（放開後自動復原）';
 function setTool(t){tool=t;$('hint').textContent=t==='sculpt'?SCULPT_HINT:BASE_HINT;if(t==='sculpt'&&selected)frameOn(selected,0.7);document.querySelectorAll('#tools button').forEach(x=>x.classList.toggle('on',x.dataset.tool===t));
   canvas.style.cursor=t==='sculpt'?'none':'default';if(t!=='sculpt')brush.style.display='none'}
 $('tools').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.tool==='frame'){selected?frameOn(selected,1):frameAll();return}setTool(b.dataset.tool)};
@@ -209,7 +231,7 @@ let down=null,sculpting=false,mouse=null,tapAgain=false,idle=0;
 view.addEventListener('pointerdown',e=>{if(e.target!==canvas)return;down={x:e.clientX,y:e.clientY};
   if(tool==='sculpt'){pick(e);const h=ray.intersectObjects(meshes(),false)[0];
     if(h){const it=h.object.userData.item;controls.enabled=false;
-      if(it!==selected){select(it,false);frameOn(it,0.7);down=null;sculptHint('對準了。現在按住拖曳，把表面推出來')}   // 先對準，再捏
+      if(it!==selected){select(it,false);frameOn(it,0.7);down=null;sculptHint('已對準。按住拖曳即可推動表面')}   // 先對準，再捏
       else{sculpting=true;sculpt(h)}}}},true);
 window.addEventListener('pointerup',()=>{if(tool==='sculpt')controls.enabled=true},true);
 window.addEventListener('pointerup',e=>{if(sculpting){sculpting=false;controls.enabled=true;lastSculpt=performance.now();return}
@@ -222,8 +244,10 @@ canvas.addEventListener('pointermove',e=>{mouse=e;if(tool==='sculpt'){brush.styl
     if(!sculpting){pick(e);brush.classList.toggle('on',!!ray.intersectObjects(meshes(),false)[0])}}
   if(sculpting){pick(e);const h=ray.intersectObjects(meshes(),false)[0];if(h)sculpt(h)}});
 canvas.addEventListener('pointerleave',()=>{brush.style.display='none';mouse=null});
+canvas.addEventListener('pointerdown',()=>canvas.focus({preventScroll:true}));   // 點過 3D 畫面後，Tab 才代表「開啟作品頁」
 window.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('input,textarea'))return;
-  if(e.key==='Tab'){e.preventDefault();if(selected)enter(selected);else{select(items[items.length-1],true)}}
+  // Tab＝切換到 Edit Mode，只在 3D 畫面有焦點時才攔截；其他時候 Tab 照一般網頁移動焦點（鍵盤使用者才走得到連結與按鈕）
+  if((e.key==='Tab'&&!e.shiftKey||e.key==='Enter')&&document.activeElement===canvas){e.preventDefault();if(selected)enter(selected);else{select(items[items.length-1],true)}}
   if(e.key==='s'||e.key==='S')setTool('sculpt');if(e.key==='q'||e.key==='Q')setTool('select');
   if(e.key==='.')selected?frameOn(selected,1):frameAll();if(e.key==='Escape'&&selected){outline(selected,false);select(null);frameAll()}
   if(e.key==='ArrowRight'||e.key==='ArrowLeft'){const i=selected?items.indexOf(selected):-1,n=(i+(e.key==='ArrowRight'?1:-1)+items.length)%items.length;select(items[n],true)}});
@@ -284,7 +308,7 @@ function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
   renderer.render(scene,camera);gizmo();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
 // 從作品頁按 Tab 回來時，頁面可能是從快取還原的，重設進場狀態
-window.addEventListener('pageshow',()=>{document.body.classList.remove('entering');entering=false;document.querySelectorAll('.trans').forEach(e=>e.remove());items.forEach(it=>it.meshes.forEach(m=>{m.material.wireframe=false}));$('modeLabel').innerHTML='<b>Object Mode</b>　瀏覽　▾'});
+window.addEventListener('pageshow',e=>{entering=false;document.querySelectorAll('.trans').forEach(o=>{if(e.persisted&&window.PFX&&o._parts)PFX.play(o,'reveal').then(()=>o.remove());else o.remove()});items.forEach(it=>it.meshes.forEach(m=>{m.material.wireframe=false}));$('modeLabel').innerHTML='<b>Object Mode</b>　瀏覽　▾'});
 
 // 第一次進站：顯示三步驟說明（看過就記住，不再出現）
 (function(){const g=$('guide');let seen=false;try{seen=localStorage.getItem('pf-guide')==='1'}catch(e){}
@@ -293,7 +317,7 @@ window.addEventListener('pageshow',()=>{document.body.classList.remove('entering
 
 // ---------------- 其他看起來像按鈕的元素都要有作用
 $('logo').onclick=()=>{if(selected)outline(selected,false);select(null);setTool('select');frameAll()};          // 標誌：回到全部作品
-$('modeLabel').onclick=()=>{if(selected)enter(selected);else sculptHint('先點一件作品，再按這裡進入它的作品頁（Edit Mode）')};  // 模式：進入作品
+$('modeLabel').onclick=()=>{if(selected)enter(selected);else sculptHint('請先點選作品，再按此處開啟作品頁（Edit Mode）')};  // 模式：進入作品
 tree.querySelectorAll('.coll').forEach(c=>c.onclick=()=>{const open=!c.classList.toggle('shut');let n=c.nextElementSibling;   // 分組標題：收合
   while(n&&!n.classList.contains('coll')){n.hidden=!open;n=n.nextElementSibling}c.textContent=c.textContent.replace(/^[▾▸]/,open?'▾':'▸')});
 
@@ -314,7 +338,7 @@ tree.querySelectorAll('.coll').forEach(c=>c.onclick=()=>{const open=!c.classList
   const setOn=v=>{on=v;box.classList.toggle('off',!on);try{localStorage.setItem('pf-keys',on?'1':'0')}catch(e){}};setOn(on);
   box.querySelector('.kt').onclick=e=>{e.stopPropagation();setOn(!on)};
   const NAMES={' ':'Space','Escape':'Esc','ArrowLeft':'←','ArrowRight':'→','ArrowUp':'↑','ArrowDown':'↓','Shift':'⇧ Shift','Control':'Ctrl','Alt':'⌥ Alt','Meta':'⌘','Enter':'Enter','Backspace':'⌫','.':'.'};
-  const ACT={'Tab':'進入作品','Esc':'取消選取','S':'捏捏看','Q':'選取工具','.':'對準作品','←':'上一件','→':'下一件'};
+  const ACT={'Tab':'開啟作品頁','Esc':'取消選取','S':'雕塑工具','Q':'選取工具','.':'對準作品','←':'上一件','→':'下一件'};
   function chip(k,act){if(!on)return;const c=document.createElement('div');c.className='kc';c.innerHTML=`<b>${k}</b>${act?`<span>→ ${act}</span>`:''}`;
     list.appendChild(c);while(list.children.length>4)list.firstChild.remove();setTimeout(()=>c.classList.add('fade'),1400);setTimeout(()=>c.remove(),2000);return c}
   window.addEventListener('keydown',e=>{if(e.repeat)return;let k=NAMES[e.key]||(e.key.length===1?e.key.toUpperCase():e.key);
@@ -322,11 +346,11 @@ tree.querySelectorAll('.coll').forEach(c=>c.onclick=()=>{const open=!c.classList
     const mods=[e.shiftKey&&'⇧',e.ctrlKey&&'Ctrl',e.altKey&&'⌥',e.metaKey&&'⌘'].filter(Boolean);
     chip(mods.length?mods.join(' + ')+' + '+k:k,ACT[k]||'')},true);
   // 滑鼠：哪顆鍵按著就亮哪裡；拖曳時顯示在做什麼
-  const part=['ml-l','ml-m','ml-r'],DRAG=['轉動畫面','縮放','平移畫面'],BTN=['左鍵','中鍵','右鍵'];
+  const part=['ml-l','ml-m','ml-r'],DRAG=['旋轉視角','縮放','平移'],BTN=['左鍵','中鍵','右鍵'];
   let pressed=-1,dragChip=null,start=null;
   canvas.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'){chip('觸控','點選／拖曳轉動');return}
     pressed=e.button;svg.querySelector('.'+part[e.button])?.classList.add('on');start={x:e.clientX,y:e.clientY};
-    dragChip=chip(BTN[e.button]||('按鍵 '+e.button),tool==='sculpt'&&e.button===0?'捏模型':['點選作品','拖曳可縮放','拖曳可平移'][e.button]||'')},true);
+    dragChip=chip(BTN[e.button]||('按鍵 '+e.button),tool==='sculpt'&&e.button===0?'雕塑':['點選作品','拖曳縮放','拖曳平移'][e.button]||'')},true);
   window.addEventListener('pointermove',e=>{if(pressed<0||!start||!dragChip)return;if(Math.hypot(e.clientX-start.x,e.clientY-start.y)>6&&!dragChip.dataset.drag){
     dragChip.dataset.drag=1;dragChip.innerHTML=`<b>${BTN[pressed]}拖曳</b><span>→ ${tool==='sculpt'&&pressed===0&&sculpting?'推動表面':DRAG[pressed]}</span>`}},true);
   window.addEventListener('pointerup',()=>{if(pressed>=0)svg.querySelector('.'+part[pressed])?.classList.remove('on');pressed=-1;start=null},true);

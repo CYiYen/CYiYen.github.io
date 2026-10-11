@@ -21,7 +21,7 @@
       gains[i].gain.setTargetAtTime(tgt,ctx.currentTime,0.12) }
     btn.addEventListener('click',function(){
       if(!ctx)setup();
-      on=!on; btn.setAttribute('aria-pressed',on); btn.textContent=on?'■ 停止聲音':'▶ 聆聽 Beacon Silence';
+      on=!on; btn.setAttribute('aria-pressed',on); btn.textContent=on?'■ 停止播放':'▶ 播放 Beacon Silence';
       hero.classList.toggle('playing',on);
       if(on){ctx.resume();var t=els[0].currentTime;els.forEach(function(a){a.currentTime=t;a.play().catch(function(){})})}
       else setTimeout(function(){if(!on)els.forEach(function(a){a.pause()})},600);
@@ -48,34 +48,49 @@
 
   // Edit Mode：按 Esc（或焦點不在連結上時按 Tab）回到首頁的 3D 視窗，並選取這件作品
   var mb=document.querySelector('.modebar'),main=document.querySelector('main.work'),de=document.documentElement;
-  // 離開作品頁：畫面從中心收成圓，回到 3D 首頁（首頁會把鏡頭從這件作品前面往後拉）
+  // 離開作品頁：用這件作品自己的轉場動態蓋上畫面，回到 3D 首頁（首頁再倒放、收回模型）
+  var leaving=false;
   function leave(href){
-    if(!main||!main.dataset.cover){location.href=href;return}
+    if(!main||!main.dataset.cover||!window.PFX||PFX.reduce){location.href=href;return}
+    if(leaving)return;leaving=true;
     try{sessionStorage.setItem('pf-back',JSON.stringify({slug:main.dataset.slug,t:Date.now()}))}catch(e){}
-    var ov=document.createElement('div');ov.className='trans';ov.style.setProperty('--x','50%');ov.style.setProperty('--y','50%');ov.style.transitionDuration='.55s';
-    ov.innerHTML='<img src="'+main.dataset.cover+'" alt="" style="object-position:'+main.dataset.pos+'"><div class="tt"><span>Object Mode</span><b>'+main.dataset.title+'</b></div>';
-    document.body.appendChild(ov);requestAnimationFrame(function(){requestAnimationFrame(function(){ov.classList.add('open')})});
-    setTimeout(function(){location.href=href},600)}
+    var gone=false,go=function(){if(!gone){gone=true;location.href=href}};
+    var ov=PFX.build({slug:main.dataset.slug,src:main.dataset.cover,pos:main.dataset.pos,title:main.dataset.title,label:'Object Mode'});
+    PFX.play(ov,'cover').then(function(){setTimeout(go,40)});setTimeout(go,2600)}
   if(mb){
     window.addEventListener('keydown',function(e){
       var ae=document.activeElement,onBody=!ae||ae===document.body;
-      if(e.key==='Escape'||(e.key==='Tab'&&!e.shiftKey&&onBody)){e.preventDefault();leave(mb.dataset.back)}});
+      if(e.key==='Escape'){e.preventDefault();leave(mb.dataset.back)}});   // 只用 Esc 回首頁；Tab 留給鍵盤使用者移動焦點
     var bk=mb.querySelector('.back');if(bk)bk.addEventListener('click',function(e){e.preventDefault();leave(mb.dataset.back)});
   }
-  window.addEventListener('pageshow',function(){document.querySelectorAll('.trans').forEach(function(x){x.remove()})});
-  // 從 3D 首頁進來：滿版封面收進版面的主圖位置，內容依序浮上來
-  if(main&&de.classList.contains('intro')){
+  window.addEventListener('pageshow',function(){leaving=false;document.querySelectorAll('.trans').forEach(function(x){x.remove()})});
+  // 從 3D 首頁進來：第一格是滿版封面（與首頁轉場最後一格相同），封面縮進版面中主圖的位置，其餘內容依序浮上來
+  var cv=document.querySelector('.cover-in');
+  if(main&&cv&&de.classList.contains('intro')){
     try{sessionStorage.removeItem('pf-enter')}catch(e){}
-    var c=document.createElement('div');c.className='cover-in';
-    c.innerHTML='<img src="'+main.dataset.cover+'" alt="" style="object-position:'+main.dataset.pos+'"><div class="tt"><span>Edit Mode</span><b>'+main.dataset.title+'</b></div>';
-    document.body.appendChild(c);
-    var tgt=main.querySelector('.poster,.bleed,.sp-media,.masonry,.media');
-    setTimeout(function(){
-      var W=innerWidth,H=innerHeight,r=tgt?tgt.getBoundingClientRect():{top:H*.3,left:24,right:W-24,bottom:H*.85};
-      var t=Math.max(0,r.top),l=Math.max(0,r.left),b=Math.max(0,H-Math.min(H,r.bottom)),rr=Math.max(0,W-Math.min(W,r.right));
-      c.querySelector('.tt').style.opacity=0;c.style.clipPath='inset('+t+'px '+rr+'px '+b+'px '+l+'px)';c.style.opacity=0;
+    var tgt=main.querySelector('.poster,.bleed,.sp-media,.masonry,.media'),top=tgt;
+    while(top&&top.parentElement!==main)top=top.parentElement;
+    if(top)top.classList.add('cv-keep');                                     // 主圖所在的區塊不做浮上動畫，封面才能剛好疊上去
+    var m=tgt&&(tgt.matches('img,video')?tgt:tgt.querySelector('img,video'));
+    // 主圖是照片：等解碼；是影片：等尺寸確定（否則落點會算錯）
+    var until=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
+    var wait=!m?Promise.resolve():m.tagName==='IMG'?Promise.race([m.decode?m.decode().catch(function(){}):Promise.resolve(),until(500)])
+      :Promise.race([new Promise(function(r){if(m.readyState>=1)r();else m.addEventListener('loadedmetadata',r,{once:true})}),until(700)]);
+    // 影片要等第一格畫面真的出來，封面才淡出，不會閃黑
+    var shown=function(){return !m||m.tagName==='IMG'?Promise.resolve():Promise.race([new Promise(function(r){if(m.readyState>=2)r();else m.addEventListener('loadeddata',r,{once:true})}),until(900)])};
+    var finish=function(){cv.remove();de.classList.remove('intro','intro-run')};
+    var started=false,start=function(fn){return function(){if(started)return;started=true;fn()}};
+    setTimeout(function(){if(!started){started=true;finish()}},3000);          // 分頁在背景（畫面不更新）時保底：直接移除封面，不會卡住
+    wait.then(function(){requestAnimationFrame(start(function(){
+      if(!window.PFX||PFX.reduce||!cv.animate){finish();return}
+      var W=de.clientWidth,H=de.clientHeight,r=m?m.getBoundingClientRect():{top:H*.3,left:24,width:W-48,height:H*.5};
+      var D=820,E='cubic-bezier(.65,0,.25,1)',im=cv.querySelector('img');
+      im.animate([{left:'0px',top:'0px',width:W+'px',height:H+'px',filter:'brightness(.55)'},{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',filter:'brightness(1)'}],{duration:D,easing:E,fill:'forwards'});
+      cv.animate([{backgroundColor:'rgba(11,11,11,1)'},{backgroundColor:'rgba(11,11,11,0)'}],{duration:D*.8,easing:'linear',fill:'forwards'});
+      cv.querySelector('.tt').animate([{opacity:1,transform:'none'},{opacity:0,transform:'translateY(-14px)'}],{duration:280,easing:'ease-out',fill:'forwards'});
       de.classList.remove('intro');de.classList.add('intro-run');
-      setTimeout(function(){c.remove()},1300);setTimeout(function(){de.classList.remove('intro-run')},1700)},250);
+      setTimeout(function(){shown().then(function(){cv.animate([{opacity:1},{opacity:0}],{duration:320,fill:'forwards'}).finished.then(finish)})},D);
+      setTimeout(finish,3200)}))});
   }
 
   // 分隔線：游標靠近時在該處斷開

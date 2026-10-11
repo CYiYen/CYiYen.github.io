@@ -8,7 +8,7 @@ a{color:inherit;text-decoration:none}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 img{display:block;width:100%}
 .mono{font-family:var(--mono);font-size:11.5px}
-#app{height:100vh;display:grid;grid-template-rows:30px 1fr 58px 22px;grid-template-columns:220px 1fr 320px;
+#app{height:100vh;height:100dvh;display:grid;grid-template-rows:30px 1fr 58px 22px;grid-template-columns:220px 1fr 320px;
   grid-template-areas:"top top top" "out view prop" "time time time" "status status status"}
 .top{grid-area:top;display:flex;align-items:center;gap:2px;background:var(--head);border-bottom:1px solid #111;padding:0 8px}
 .top .logo{width:16px;height:16px;border:1.5px solid var(--ink);border-radius:50%;margin-right:10px;position:relative;flex:0 0 auto}
@@ -27,7 +27,7 @@ img{display:block;width:100%}
 .tree .item .nm{overflow:hidden;text-overflow:ellipsis}
 .tree .ico{width:9px;height:9px;border:1px solid currentColor;transform:rotate(45deg);flex:0 0 auto;opacity:.7}
 .tree .ico.pg{transform:none;border-radius:1px}
-.tree .item small{margin-left:auto;color:var(--mid);font-family:var(--mono);font-size:10.5px}
+.tree .item small{margin-left:auto;color:var(--mid);font-family:var(--mono);font-size:11.5px}
 .view{grid-area:view;position:relative;background:#2b2b2b;overflow:hidden}
 .view canvas#cv{display:block;width:100%;height:100%;touch-action:none}
 .vh{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:5px 8px;z-index:3;pointer-events:none}
@@ -68,12 +68,9 @@ img{display:block;width:100%}
 .track .key.on{background:#fff;box-shadow:0 0 0 2px #888}
 .track .line{position:absolute;left:0;right:0;top:35px;height:1px;background:#444}
 .track .head{position:absolute;top:0;bottom:0;width:1px;background:#ddd;transition:left .5s}
-.track .head::before{content:attr(data-y);position:absolute;top:2px;left:-18px;width:36px;text-align:center;background:#ddd;color:#111;border-radius:3px;font-family:var(--mono);font-size:10.5px}
+.track .head::before{content:attr(data-y);position:absolute;top:2px;left:-18px;width:36px;text-align:center;background:#ddd;color:#111;border-radius:3px;font-family:var(--mono);font-size:11.5px}
 .status{grid-area:status;background:var(--head);display:flex;gap:18px;align-items:center;padding:0 10px;color:var(--mid);border-top:1px solid #111;white-space:nowrap;overflow:hidden}
 .status .r{margin-left:auto}
-/* 進入 Edit Mode 的轉場 */
-body::after{content:"";position:fixed;inset:0;background:#0b0b0b;opacity:0;pointer-events:none;transition:opacity .45s .15s;z-index:100}
-body.entering::after{opacity:1}
 @media(max-width:900px){
   body{overflow:auto}
   #app{height:auto;grid-template-columns:1fr;grid-template-rows:30px 60vh auto auto 58px 22px;grid-template-areas:"top" "view" "prop" "out" "time" "status"}
@@ -81,7 +78,7 @@ body.entering::after{opacity:1}
   .top .menu{padding:4px 6px}
   .prop{border-left:0}.panel{overflow:visible}
   .time{grid-template-columns:1fr}.time .tl{display:none}
-  .hint{white-space:normal;width:92%;text-align:center;font-size:10.5px;bottom:8px}
+  .hint{white-space:normal;width:92%;text-align:center;font-size:11.5px;bottom:8px}
 }
 /* 簡化版：工具列直接寫字、上一件下一件、第一次進站的說明 */
 .tools button{width:auto;height:30px;display:flex;gap:6px;align-items:center;padding:0 10px;font-family:var(--sans);font-size:12.5px}
@@ -152,7 +149,7 @@ body.theme-fade .btn.primary,body.theme-fade .btn.on{background:#e6e6e6;color:#1
 
 /* 按鍵顯示（Screencast Keys）：3D 視窗左下角 */
 .keys{position:absolute;left:10px;bottom:52px;z-index:4;display:flex;flex-direction:column;align-items:flex-start;gap:6px;pointer-events:none}
-.keys .kt{pointer-events:auto;font:inherit;font-size:10.5px;color:var(--mid);background:rgba(20,20,20,.7);border:1px solid #333;border-radius:3px;padding:2px 7px;cursor:pointer}
+.keys .kt{pointer-events:auto;font:inherit;font-size:11.5px;color:var(--mid);background:rgba(20,20,20,.7);border:1px solid #333;border-radius:3px;padding:2px 7px;cursor:pointer}
 .keys .kt::before{content:"● ";color:#e8e8e8}.keys.off .kt::before{content:"○ ";color:var(--mid)}
 .keys.off .kb{display:none}
 .keys .kb{display:flex;align-items:flex-end;gap:8px}
@@ -170,14 +167,9 @@ body.theme-clay .mouse .on,body.theme-clay .mouse .wu,body.theme-clay .mouse .wd
 body.theme-clay .kc{background:#f3ede4;border-color:#d9cfc1;color:#3a332c}body.theme-clay .kc b{background:#3a332c;color:#f3ede4;border-bottom-color:#1d1915}body.theme-clay .kc span{color:#8b8075}
 @media(max-width:900px){.keys{bottom:46px}.keys .mouse{display:none}}
 
-/* ================= 轉場：從 3D 首頁進入作品（Edit Mode）================= */
-.trans{position:fixed;inset:0;z-index:200;background:#0b0b0b;pointer-events:none;
-  clip-path:circle(0px at var(--x,50%) var(--y,50%));transition:clip-path .75s cubic-bezier(.75,0,.2,1)}
-.trans.open{clip-path:circle(150vmax at var(--x,50%) var(--y,50%))}
-.trans img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.55);transform:scale(1.18);transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}
-.trans.open img{transform:scale(1)}
-.trans .tt{position:absolute;left:max(24px,calc(50vw - 596px));bottom:44px;color:#fff;transform:translateY(24px);opacity:0;transition:all .6s .35s}
-.trans.open .tt{transform:none;opacity:1}
-.trans .tt span{display:inline-block;background:#e6e6e6;color:#111;border-radius:3px;padding:2px 9px;font-size:12px}
-.trans .tt b{display:block;font-size:clamp(40px,7vw,96px);font-weight:700;letter-spacing:-.01em;line-height:1;margin-top:12px}
-.trans.back{transition-duration:.6s}
+
+/* 鍵盤焦點（黑白，不用彩色）＋只給螢幕閱讀器的文字 */
+:focus-visible{outline:1px solid #e6e6e6;outline-offset:2px}
+.view canvas#cv:focus-visible{outline:1px solid #e6e6e6;outline-offset:-3px}
+.track .key:focus-visible{outline-offset:3px}
+.sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}

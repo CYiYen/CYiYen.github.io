@@ -1,0 +1,21 @@
+/* 轉場（首頁與作品頁共用）：各作品動態見 trans.js */
+@property --r{syntax:'<length>';inherits:false;initial-value:0px}
+.trans{position:fixed;inset:0;z-index:200;pointer-events:none;overflow:hidden;contain:strict}
+.trans .base{position:absolute;inset:0;background:#0b0b0b;opacity:0}
+.trans .base img,.cover-in img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.55)}
+.trans .pc{position:absolute;display:block;overflow:hidden;background:#0b0b0b;will-change:transform}
+.trans .pc.rd{border-radius:50%}
+.trans .pc img{position:absolute;max-width:none;object-fit:cover;filter:brightness(.55)}
+.trans .pc.soft{-webkit-mask-image:radial-gradient(circle at var(--cx) var(--cy),#000 calc(var(--r) - 240px),transparent var(--r));
+                mask-image:radial-gradient(circle at var(--cx) var(--cy),#000 calc(var(--r) - 240px),transparent var(--r))}
+.trans .ring{position:absolute;display:block;border:1.5px solid rgba(255,255,255,.7);border-radius:50%;transform:scale(0);opacity:0}
+.trans .tint{position:absolute;display:block;background:conic-gradient(rgba(150,14,20,.72) 0 50%,transparent 0)}
+.trans .tt,.cover-in .tt{position:absolute;left:max(24px,calc(50vw - 596px));bottom:44px;color:#fff;opacity:0}
+.cover-in .tt{opacity:1}
+.trans .tt span,.cover-in .tt span{display:inline-block;background:#e6e6e6;color:#111;border-radius:3px;padding:2px 9px;font-family:"IBM Plex Mono",monospace;font-size:12px}
+.trans .tt b,.cover-in .tt b{display:block;font-family:"Noto Sans TC",sans-serif;font-size:clamp(40px,7vw,96px);font-weight:700;letter-spacing:-.01em;line-height:1;margin-top:12px}
+/* 作品頁第一格：與首頁轉場最後一格相同 */
+.cover-in{display:none;position:fixed;inset:0;z-index:200;overflow:hidden;background:#0b0b0b;pointer-events:none}
+html.intro .cover-in,html.intro-run .cover-in{display:block}
+html.back-hold #backHold{display:block}
+.trans canvas.cv{position:absolute;inset:0;width:100%;height:100%;display:block}

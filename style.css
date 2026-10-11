@@ -97,7 +97,7 @@ header.top a:hover{color:#fff;text-decoration:underline;text-underline-offset:4p
 .lead{display:grid;grid-template-columns:1.3fr 1fr;gap:48px;align-items:end;margin-bottom:40px}
 .tagline{color:var(--mid)}
 .work h1{font-size:clamp(34px,5vw,60px);font-weight:700;letter-spacing:.03em;line-height:1.12;margin-top:12px}
-.work h1 small{display:block;font-size:17px;font-weight:400;color:var(--mid);letter-spacing:.12em;margin-top:8px}
+.work h1 small{display:block;font-size:17px;font-weight:400;color:var(--mid);letter-spacing:.06em;margin-top:8px}
 .lede{margin-top:18px;font-size:17px;max-width:30em}
 .lede .en{display:block;margin-top:6px}
 .spec{display:grid;gap:8px;color:var(--mid);line-height:1.6}
@@ -185,7 +185,7 @@ body > .rule{margin:56px 24px 24px}
 .sp.rev{grid-template-columns:1fr 1.15fr}.sp.rev .sp-media{order:2}
 .sp-media{position:sticky;top:24px;display:grid;gap:16px}.sp-media .fig{margin:0}
 .sp-text h1{font-size:clamp(34px,4.6vw,58px);font-weight:700;letter-spacing:.02em;line-height:1.1;margin-top:12px}
-.sp-text h1 small{display:block;font-size:17px;font-weight:400;color:var(--mid);letter-spacing:.12em;margin-top:8px}
+.sp-text h1 small{display:block;font-size:17px;font-weight:400;color:var(--mid);letter-spacing:.06em;margin-top:8px}
 .sp-text .text{margin:40px 0}
 /* 圖庫優先 */
 .gal-head{padding:16px 0 48px;max-width:980px}
@@ -200,7 +200,7 @@ body > .rule{margin:56px 24px 24px}
 /* 置中窄欄 */
 .ctr{max-width:760px;margin:0 auto}
 .ctr h1{font-size:clamp(34px,5vw,56px);font-weight:700;letter-spacing:.03em;line-height:1.12;margin-top:12px}
-.ctr h1 small{display:block;font-size:17px;font-weight:400;color:var(--mid);letter-spacing:.12em;margin-top:8px}
+.ctr h1 small{display:block;font-size:17px;font-weight:400;color:var(--mid);letter-spacing:.06em;margin-top:8px}
 .ctr .media{margin:40px 0;background:none}.ctr .text{margin-top:16px}.ctr .figs{margin-top:48px}
 /* 海報 */
 .poster{position:relative;margin:-16px calc(50% - 50vw) 0;height:min(86vh,920px);overflow:hidden}
@@ -212,25 +212,12 @@ body > .rule{margin:56px 24px 24px}
   .sp-media{position:static}.masonry{columns:2}.figs.three{columns:1}.figs.two{columns:1}.poster{height:70vh}
 }
 
-/* ================= 轉場：從 3D 首頁進入作品（Edit Mode）================= */
-.trans{position:fixed;inset:0;z-index:200;background:#0b0b0b;pointer-events:none;
-  clip-path:circle(0px at var(--x,50%) var(--y,50%));transition:clip-path .75s cubic-bezier(.75,0,.2,1)}
-.trans.open{clip-path:circle(150vmax at var(--x,50%) var(--y,50%))}
-.trans img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.55);transform:scale(1.18);transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}
-.trans.open img{transform:scale(1)}
-.trans .tt{position:absolute;left:max(24px,calc(50vw - 596px));bottom:44px;color:#fff;transform:translateY(24px);opacity:0;transition:all .6s .35s}
-.trans.open .tt{transform:none;opacity:1}
-.trans .tt span{display:inline-block;background:#e6e6e6;color:#111;border-radius:3px;padding:2px 9px;font-size:12px}
-.trans .tt b{display:block;font-size:clamp(40px,7vw,96px);font-weight:700;letter-spacing:-.01em;line-height:1;margin-top:12px}
 /* 作品頁接手：先蓋住內容，封面收進頁面，內容依序浮上來 */
-html.intro main.work>*{opacity:0}
-html.intro-run main.work>*{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+html.intro main.work>*:not(.cv-keep){opacity:0}
+html.intro-run main.work>*:not(.cv-keep){animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
 html.intro-run main.work>*:nth-child(2){animation-delay:.08s}html.intro-run main.work>*:nth-child(3){animation-delay:.16s}
 html.intro-run main.work>*:nth-child(4){animation-delay:.24s}html.intro-run main.work>*:nth-child(n+5){animation-delay:.32s}
 @keyframes rise{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
-.cover-in{position:fixed;inset:0;z-index:200;overflow:hidden;background:#0b0b0b;clip-path:inset(0 0 0 0);transition:clip-path .85s cubic-bezier(.7,0,.2,1),opacity .4s .75s}
-.cover-in img{width:100%;height:100%;object-fit:cover;filter:brightness(.55)}
-.cover-in .tt{position:absolute;left:max(24px,calc(50vw - 596px));bottom:44px;color:#fff;transition:opacity .35s}
-.cover-in .tt span{display:inline-block;background:#e6e6e6;color:#111;border-radius:3px;padding:2px 9px;font-family:var(--mono);font-size:12px}
-.cover-in .tt b{display:block;font-size:clamp(40px,7vw,96px);font-weight:700;line-height:1;margin-top:12px}
-@media (prefers-reduced-motion:reduce){.trans,.cover-in,.trans img{transition:none}html.intro-run main.work>*{animation:none}}
+@media (prefers-reduced-motion:reduce){html.intro-run main.work>*{animation:none}}
+/* 鍵盤焦點（黑白，不用彩色） */
+:focus-visible{outline:1px solid #e6e6e6;outline-offset:3px}
