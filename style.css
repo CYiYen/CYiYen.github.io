@@ -227,3 +227,11 @@ html.intro-run main.work>*:nth-child(4){animation-delay:.24s}html.intro-run main
 .tools .tn{font-family:var(--mono);font-size:12px;color:var(--ink)}
 .tools .tu{color:var(--mid);line-height:1.6}.tools .tu i{color:var(--ink)}
 @media(max-width:760px){.tools .tr{grid-template-columns:1fr;gap:2px}}
+/* Cue 表（負皮）：依 cue 編號排開的舞台影像，桌機兩欄、手機一欄 */
+.cue-h{display:flex;justify-content:space-between;color:var(--mid);margin-top:64px;padding-bottom:8px;border-bottom:1px solid var(--dim)}
+.cues{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 24px;margin-top:20px}
+.cue{margin:0;min-width:0}.cue .cn{display:block;font-size:12px;letter-spacing:.12em;color:var(--ink);margin-bottom:6px}
+.cue img{width:100%;height:auto;display:block}
+.cue figcaption{margin-top:6px;color:var(--mid);font-size:12px;line-height:1.5}
+.figs.stage{margin-top:48px}
+@media(max-width:760px){.cues{grid-template-columns:1fr}}
