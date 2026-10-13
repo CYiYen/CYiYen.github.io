@@ -235,3 +235,4 @@ html.intro-run main.work>*:nth-child(4){animation-delay:.24s}html.intro-run main
 .cue figcaption{margin-top:6px;color:var(--mid);font-size:12px;line-height:1.5}
 .figs.stage{margin-top:48px}
 @media(max-width:760px){.cues{grid-template-columns:1fr}}
+.hcap{margin-top:8px;color:var(--mid);font-size:12px}
