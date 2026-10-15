@@ -103,7 +103,7 @@ header.top a:hover{color:#fff;text-decoration:underline;text-underline-offset:4p
 .spec{display:grid;gap:8px;color:var(--mid);line-height:1.6}
 .spec div{display:grid;grid-template-columns:6em 1fr;gap:12px;border-top:1px solid var(--dim);padding-top:8px}
 .spec dt{color:var(--ink)}
-.media{display:flex;justify-content:center;background:#000}
+.media{display:flex;flex-wrap:wrap;justify-content:center;background:#000}
 .media video{max-height:84vh;width:auto;max-width:100%}
 .media img{margin:0 auto}
 .text{display:grid;gap:30px;max-width:1080px}
@@ -219,6 +219,9 @@ html.intro-run main.work>*:nth-child(2){animation-delay:.08s}html.intro-run main
 html.intro-run main.work>*:nth-child(4){animation-delay:.24s}html.intro-run main.work>*:nth-child(n+5){animation-delay:.32s}
 @keyframes rise{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){html.intro-run main.work>*{animation:none}}
+/* 英文站（en/）：段落只有英文一欄，佔滿中文欄＋英文欄 */
+.para p.main{grid-column:2/-1;font-size:16px;line-height:1.95}.ilv .para p.main{font-size:17px}
+header.top nav .lang{color:var(--mid)}
 /* 鍵盤焦點（黑白，不用彩色） */
 :focus-visible{outline:1px solid #e6e6e6;outline-offset:3px}
 /* 簡歷工具：工具名＋用它做過的作品 */
@@ -235,4 +238,4 @@ html.intro-run main.work>*:nth-child(4){animation-delay:.24s}html.intro-run main
 .cue figcaption{margin-top:6px;color:var(--mid);font-size:12px;line-height:1.5}
 .figs.stage{margin-top:48px}
 @media(max-width:760px){.cues{grid-template-columns:1fr}}
-.hcap{margin-top:8px;color:var(--mid);font-size:12px}
+.hcap{flex:0 0 100%;margin-top:8px;color:var(--mid);font-size:12px}  /* 主圖說明要自成一列，不能擠在圖旁邊（2026-10-14 修） */

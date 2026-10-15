@@ -1,3 +1,4 @@
+var EN=document.documentElement.lang==='en';  // 英文站（en/）的少數介面文字
 // 光束互動（概念來自 Beacon Silence：人擋住哪道光，哪個聲部就安靜）
 (function(){
   var hero=document.getElementById('hero');
@@ -21,7 +22,7 @@
       gains[i].gain.setTargetAtTime(tgt,ctx.currentTime,0.12) }
     btn.addEventListener('click',function(){
       if(!ctx)setup();
-      on=!on; btn.setAttribute('aria-pressed',on); btn.textContent=on?'■ 停止播放':'▶ 播放 Beacon Silence';
+      on=!on; btn.setAttribute('aria-pressed',on); btn.textContent=on?(EN?'■ Stop':'■ 停止播放'):(EN?'▶ Play Beacon Silence':(EN?'▶ Play Beacon Silence':'▶ 播放 Beacon Silence'));
       hero.classList.toggle('playing',on);
       if(on){ctx.resume();var t=els[0].currentTime;els.forEach(function(a){a.currentTime=t;a.play().catch(function(){})})}
       else setTimeout(function(){if(!on)els.forEach(function(a){a.pause()})},600);
