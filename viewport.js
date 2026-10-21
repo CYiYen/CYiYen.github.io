@@ -20,7 +20,7 @@ const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setPixe
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 const scene=new THREE.Scene();scene.background=new THREE.Color(CLAY?0xe3dcd2:FADE?0x070707:0x2b2b2b);
 const camera=new THREE.PerspectiveCamera(38,1,0.05,300);
-const controls=new OrbitControls(camera,canvas);controls.enableDamping=true;controls.target.set(0,0.8,0);controls.maxPolarAngle=Math.PI*0.49;
+const controls=new OrbitControls(camera,canvas);controls.enableDamping=true;controls.target.set(0,0.8,0);controls.maxPolarAngle=Math.PI*0.49;controls.minDistance=2.4;  // 防穿模：鏡頭不能鑽進模型（模型半寬約 1.3–1.7）
 scene.add(new THREE.HemisphereLight(0xffffff,0x3a3a3a,FADE?0.05:1.6));
 const key=new THREE.DirectionalLight(0xffffff,FADE?0:1.6);key.position.set(5,9,6);scene.add(key);
 if(CLAY){renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;key.castShadow=true;key.shadow.mapSize.set(2048,2048);
@@ -112,6 +112,10 @@ W.forEach((w,i)=>{
     
     root.traverse(o=>{if(o.isMesh){it.meshes.push(o);o.userData.item=it;it.orig.set(o,o.geometry.attributes.position.array.slice())}});
     if(w.slug==='beacon-silence'){it.meshes.forEach(m=>{if(/Wall/i.test(m.name)){m.material.side=THREE.BackSide;m.material.color.set(0x8e8e8e)}});makeBeams(it)}
+    if(w.slug==='paper-shell-echo'){const top=PLINTH,v=new THREE.Vector3(),grounds=[/standin_Cylinder00[1-4]|standin_Cube002|standin_Apple_iMac/,/^Cylinder(005)?$|^Cube003$|Tire|standin_Object_(4001|5|6|7)$/];
+      grounds.forEach(re=>{const ms=it.meshes.filter(m=>re.test(m.name));if(!ms.length)return;const b=new THREE.Box3();ms.forEach(m=>b.expandByObject(m));const dy=b.min.y-top;if(dy<=0.005)return;
+        const set=new Set(ms);ms.filter(m=>{let q=m.parent;while(q){if(set.has(q))return false;q=q.parent}return true}).forEach(m=>{m.getWorldPosition(v);v.y-=dy;m.position.copy(m.parent.worldToLocal(v))})});
+      root.updateMatrixWorld(true)}  // 桌子、電視架落地（家具為幾何示意，原檔高低不一）
     if(w.slug==='paper-shell-echo')it.meshes.forEach(m=>{if(m.name==='Plane'){m.material.side=THREE.DoubleSide;m.material.opacity=0.16;m.material.depthWrite=false;m.userData.ghost=true}});  // 房間牆面半透明，看得到裡面的紙殼
     if(CLAY)it.meshes.forEach(m=>{m.castShadow=true});
     if(FADE)it.meshes.forEach(m=>{const e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry,40),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.07}));m.add(e)});  // 沒被照到時只剩淡淡輪廓
@@ -287,17 +291,26 @@ function gizmo(){gc.clearRect(0,0,168,168);const m=new THREE.Matrix4().extractRo
     gc.fillStyle='#111';gc.font='bold 15px "IBM Plex Mono",monospace';gc.textAlign='center';gc.textBaseline='middle';gc.fillText(n,x,y+1)})}
 function stats(){const v=items.reduce((n,it)=>n+it.meshes.reduce((a,m)=>a+m.geometry.attributes.position.count,0),0);$('stat').textContent=U.stats.replace('{n}',W.length).replace('{name}',D.name)}
 function resize(){const r=view.getBoundingClientRect();if(!r.width||!r.height)return;  // 視窗被隱藏時不更新，避免鏡頭比例變成無效值
-  renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix()}
+  renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();controls.maxDistance=homePos().distanceTo(new THREE.Vector3(0,0.8,0))*1.6}
 new ResizeObserver(resize).observe(view);resize();camera.position.copy(homePos());
 props();
 const tmp=new THREE.Vector3();let last=performance.now();
+// 防穿模（2026-10-20）：視點不能平移到地板下或作品列之外；鏡頭若進入任何作品（含台座）外框，就沿視線方向推出去
+const _cb=new THREE.Box3(),_dir=new THREE.Vector3();
+function keepOut(){const t=controls.target,lim=span*GAP/2+2.5;
+  t.x=THREE.MathUtils.clamp(t.x,-lim,lim);t.y=THREE.MathUtils.clamp(t.y,0.3,2.6);t.z=THREE.MathUtils.clamp(t.z,-3,3);
+  if(camera.position.y<0.35)camera.position.y=0.35;
+  for(const it of items){if(!it.root)continue;_cb.setFromObject(it.holder).expandByScalar(0.25);
+    if(!_cb.containsPoint(camera.position))continue;
+    _dir.subVectors(camera.position,t);if(_dir.lengthSq()<1e-6)_dir.set(0,0.4,1);_dir.normalize();
+    for(let k=0;k<80&&_cb.containsPoint(camera.position);k++)camera.position.addScaledVector(_dir,0.1)}}
 function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
   if(anim){anim.t=Math.min(1,anim.t+dt/anim.dur);const k=1-(1-anim.t)**3;camera.position.lerpVectors(anim.p0,anim.p1,k);controls.target.lerpVectors(anim.t0,anim.t1,k);
     if(anim.t>=1){const f=anim.then;anim=null;f&&f()}}
   if(FADE){let p=null;if(mouse){pick(mouse);const h=ray.intersectObjects(meshes(),false)[0];p=h?h.point:ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),new THREE.Vector3())}
     if(!p&&selected){p=new THREE.Box3().setFromObject(selected.holder).getCenter(new THREE.Vector3())}
     if(p){torch.target.position.lerp(p,0.25);torch.position.copy(camera.position).add(new THREE.Vector3(0,3,0))}}
-  controls.update();relax();
+  controls.update();keepOut();relax();
   const bs=items.find(i=>i.w.slug==='beacon-silence');
   if(bs&&bs.beams.length){let hb=-1;if(mouse&&tool==='select'){pick(mouse);const h=ray.intersectObjects(bs.beams,false)[0];if(h)hb=h.object.userData.beam}
     const now2=new Set();bs.beams.forEach((b,k)=>{b.material.opacity=k===hb?0.12:0.9;if(k===hb)now2.add(k%D.channels)});
