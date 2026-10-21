@@ -237,5 +237,8 @@ header.top nav .lang{color:var(--mid)}
 .cue img{width:100%;height:auto;display:block}
 .cue figcaption{margin-top:6px;color:var(--mid);font-size:12px;line-height:1.5}
 .figs.stage{margin-top:48px}
+/* 影片圖（2026-10-21）：figs 裡的 .mp4；vsmall＝畫質低的直式手機影片，小尺寸顯示 */
+.fig.vid video{display:block;width:100%;height:auto;background:#000}.fig.vsmall video{max-width:268px}
+.snd-note{color:var(--mid)}.cue-vid{margin:40px 0 8px}.cue-vid .fig{margin:0}
 @media(max-width:760px){.cues{grid-template-columns:1fr}}
 .hcap{flex:0 0 100%;margin-top:8px;color:var(--mid);font-size:12px}  /* 主圖說明要自成一列，不能擠在圖旁邊（2026-10-14 修） */
