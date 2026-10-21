@@ -92,6 +92,10 @@ var EN=document.documentElement.lang==='en';  // 英文站（en/）的少數介�
       de.classList.remove('intro');de.classList.add('intro-run');
       setTimeout(function(){shown().then(function(){cv.animate([{opacity:1},{opacity:0}],{duration:320,fill:'forwards'}).finished.then(finish)})},D);
       setTimeout(finish,3200)}))});
+  }else if(de.classList.contains('intro')){
+    // 沒有封面轉場的頁面（研究、協作專案、小品）：從首頁 3D 點進來時直接讓內容依序浮上來，不會一直藏著（2026-10-22 修正：畫面空白）
+    try{sessionStorage.removeItem('pf-enter')}catch(e){}
+    de.classList.remove('intro');de.classList.add('intro-run');setTimeout(function(){de.classList.remove('intro-run')},1400);
   }
 
   // 分隔線：游標靠近時在該處斷開
