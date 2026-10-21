@@ -256,3 +256,7 @@ header.top nav .lang{color:var(--mid)}
 @media(max-width:700px){.jrow:not(.keep){flex-direction:column;gap:28px}.jrow:not(.keep)>.fig{flex:none;width:100%}.jrow.keep{gap:12px}}
 .media-pair + .text{margin-top:48px}
 @media(max-width:700px){.jrow:not(.keep)>.fig.vsmall video{max-width:268px!important;margin:0 auto}}
+.about .ab-id{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"pic name" "pic lede";column-gap:28px;align-content:end;margin-top:20px}   /* 關於頁：直式照片放在名字左邊（使用者 2026-10-22 要求裁成直式） */
+.about .ab-id .portrait{grid-area:pic;align-self:end;display:block;width:170px;height:auto}
+.about .ab-id h1{grid-area:name;margin-top:0;align-self:end}.about .ab-id .lede{grid-area:lede;margin-bottom:0}
+@media(max-width:560px){.about .ab-id{grid-template-areas:"pic name" "lede lede";column-gap:18px}.about .ab-id .portrait{width:112px}.about .ab-id .lede{margin-top:20px}}
