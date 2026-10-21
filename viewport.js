@@ -151,7 +151,7 @@ W.forEach((w,i)=>{
   const plinth=new THREE.Mesh(new RoundedBoxGeometry(pw,PLINTH,wide?1.5:3.0,4,0.05),new THREE.MeshStandardMaterial({color:CLAY?0xd9d0c3:FADE?0x0c0c0c:0x3a3a3a,roughness:0.9}));
   if(CLAY)plinth.material=new THREE.MeshMatcapMaterial({matcap:MATCAP,color:0xe9e2d8});
   plinth.position.y=PLINTH/2;plinth.receiveShadow=true;holder.add(plinth);
-  const it={w,holder,root:null,meshes:[],orig:new Map(),edges:null,label:null,beams:[]};items.push(it);
+  const it={w,holder,root:null,meshes:[],orig:new Map(),edges:null,label:null,beams:[],plinth,base:holder.scale.x,p0:holder.position.clone(),up:new THREE.Vector3(0,1,0).applyQuaternion(holder.quaternion),hv:0,c0:plinth.material.color.clone(),c1:plinth.material.color.clone().offsetHSL(0,0,CLAY?-0.08:0.13)};items.push(it);
   const done=root=>{if(w.model)root.traverse(o=>{if(o.isMesh&&!o.material.map)o.material=SOLID()});if(w.rot)root.rotation.y=THREE.MathUtils.degToRad(w.rot);normalize(root,wide?3.3:2.5,w.slug==='compound-eye'?1.9:2.3);root.position.y+=PLINTH;holder.add(root);holder.updateMatrixWorld(true);it.root=root;  // 先更新位置，外框與鏡頭才算得對
     
     root.traverse(o=>{if(o.isMesh){it.meshes.push(o);o.userData.item=it;it.orig.set(o,o.geometry.attributes.position.array.slice())}});
@@ -418,8 +418,9 @@ function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
   if(bs&&bs.beams.length){let hb=-1;if(mouse&&tool==='select'){pick(mouse);const h=ray.intersectObjects(bs.beams,false)[0];if(h)hb=h.object.userData.beam}
     const now2=new Set();bs.beams.forEach((b,k)=>{b.material.opacity=k===hb?0.12:0.9;if(k===hb)now2.add(k%D.channels)});
     if([...now2].join()!==[...blocked].join()){blocked.clear();now2.forEach(c=>blocked.add(c));levels()}}
-  if(mouse&&tool==='select'&&!sculpting){pick(mouse);const h=ray.intersectObjects(meshes(),false)[0],it=h?h.object.userData.item:null;if(it!==hovered){hovered=it;canvas.style.cursor=it?'pointer':'default';if(it)it.bounce=0}}
-  items.forEach(it=>{if(it.bounce===undefined)return;it.bounce+=dt;const t=it.bounce,k=t<0.6?Math.sin(t/0.6*Math.PI*2)*Math.exp(-t*4)*0.08:0;it.holder.scale.set(1-k*0.5,1+k,1-k*0.5);if(t>0.6){it.holder.scale.set(1,1,1);it.bounce=undefined}});  // 滑過時輕輕彈一下
+  if(mouse&&tool==='select'&&!sculpting){pick(mouse);const h=ray.intersectObjects(meshes(),false)[0],it=h?h.object.userData.item:null;if(it!==hovered){if(hovered)hovered.label.classList.remove('hv');hovered=it;canvas.style.cursor=it?'pointer':'default';if(it)it.label.classList.add('hv')}}
+  items.forEach(it=>{const tg=it===hovered?1:0;if(it.hv===tg)return;it.hv+=(tg-it.hv)*Math.min(1,dt*9);if(Math.abs(tg-it.hv)<0.003)it.hv=tg;const e=it.hv*it.hv*(3-2*it.hv);   // 滑過：放大 8%、浮起、台座變亮；移開時平順縮回原本大小（依各類的縮放，不重設成 1）
+    it.holder.scale.setScalar(it.base*(1+0.08*e));it.holder.position.copy(it.p0).addScaledVector(it.up,0.22*it.base*e);it.plinth.material.color.lerpColors(it.c0,it.c1,e)});
   const r=view.getBoundingClientRect();items.forEach(it=>{if(!it.root)return;const b=new THREE.Box3().setFromObject(it.holder);tmp.set((b.min.x+b.max.x)/2,b.max.y+0.25,(b.min.z+b.max.z)/2).project(camera);
     it.label.style.display=(tmp.z<1&&(r.width>700||it===selected||it===hovered))?'block':'none';  // 窄螢幕只標選取中的作品
     it.label.style.left=((tmp.x+1)/2*r.width)+'px';it.label.style.top=((1-tmp.y)/2*r.height)+'px'});

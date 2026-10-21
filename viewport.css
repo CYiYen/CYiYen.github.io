@@ -186,3 +186,4 @@ body.theme-clay .kc{background:#f3ede4;border-color:#d9cfc1;color:#3a332c}body.t
 @media(max-width:420px){.ztabs button{padding:6px 7px;font-size:12px;gap:5px}.ztabs button small{font-size:9.5px}}
 .view[data-cz] .labels span{background:none;color:#a8a8a8;letter-spacing:.02em;margin-top:-10px}.view[data-cz] .labels span.on{background:var(--sel);color:#111}   /* 平面版：名字不加底框，畫面乾淨 */
 @media(max-width:900px){#app #gizmo.zg{display:block;top:auto;bottom:58px;right:6px;width:76px;height:76px}}   /* 平面版：手機也顯示可點的方位小工具 */
+.labels span.hv:not(.on),.view[data-cz] .labels span.hv:not(.on){color:#fff;background:rgba(70,70,70,.85)}   /* 滑過的作品名字變亮 */
