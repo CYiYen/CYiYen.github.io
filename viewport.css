@@ -173,3 +173,12 @@ body.theme-clay .kc{background:#f3ede4;border-color:#d9cfc1;color:#3a332c}body.t
 .view canvas#cv:focus-visible{outline:1px solid #e6e6e6;outline-offset:-3px}
 .track .key:focus-visible{outline-offset:3px}
 .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* 三區分頁（2026-10-21 小樣 A）：像 3D 軟體的場景切換，置中於視窗上方 */
+.ztabs{position:absolute;left:50%;top:6px;transform:translateX(-50%);z-index:4;display:flex;gap:2px;background:#1e1e1e;border:1px solid #111;border-radius:5px;padding:3px}
+.ztabs button{padding:6px 16px;border-radius:3px;color:var(--mid);font-size:13.5px;letter-spacing:.04em;white-space:nowrap;display:flex;gap:7px;align-items:baseline}
+.ztabs button small{font-family:var(--mono);font-size:10.5px;color:#777}
+.ztabs button:hover{background:#2e2e2e;color:var(--ink)}
+.ztabs button.on{background:#4a4a4a;color:#fff}.ztabs button.on small{color:#bbb}
+@media (max-width:700px){.ztabs{top:84px;left:8px;transform:none}.ztabs button{padding:6px 10px;font-size:12.5px}}
+.view.zall .labels span:not(.on){opacity:0!important}   /* 全部視角：14 件排一排名字會疊在一起，只顯示選取中的 */

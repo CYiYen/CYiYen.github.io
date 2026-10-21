@@ -101,7 +101,7 @@ header.top a:hover{color:#fff;text-decoration:underline;text-underline-offset:4p
 .lede{margin-top:18px;font-size:17px;max-width:30em}
 .lede .en{display:block;margin-top:6px}
 .spec{display:grid;gap:8px;color:var(--mid);line-height:1.6}
-.spec div{display:grid;grid-template-columns:6em 1fr;gap:12px;border-top:1px solid var(--dim);padding-top:8px}
+.spec div{display:grid;grid-template-columns:8em 1fr;gap:12px;border-top:1px solid var(--dim);padding-top:8px}
 .spec dt{color:var(--ink)}
 .media{display:flex;flex-wrap:wrap;justify-content:center;background:#000}
 .media video{max-height:84vh;width:auto;max-width:100%}
@@ -244,3 +244,15 @@ header.top nav .lang{color:var(--mid)}
 @media(max-width:700px){.media-pair{grid-template-columns:1fr}}
 @media(max-width:760px){.cues{grid-template-columns:1fr}}
 .hcap{flex:0 0 100%;margin-top:8px;color:var(--mid);font-size:12px}  /* 主圖說明要自成一列，不能擠在圖旁邊（2026-10-14 修） */
+
+/* 圖片整行排列（build.py 的 jrows）：同一行等高、左右填滿；--a＝圖片寬高比 */
+.jrows{display:flex;flex-direction:column;gap:28px;margin-top:56px;columns:auto}
+.jrow{display:flex;gap:20px;align-items:flex-start}
+.jrow>.fig{flex:var(--a) 1 0;min-width:0;margin:0}
+.jrow>.fig img,.jrow>.fig video{display:block;width:100%!important;height:auto;max-width:none!important;margin:0}
+.pw-imgs.jrows{margin-top:0;gap:22px}.pw-imgs .jrow{gap:16px}
+.gal{margin-top:48px}.gal>.media{background:none}
+.ctr .jrows{margin-top:48px}
+@media(max-width:700px){.jrow:not(.keep){flex-direction:column;gap:28px}.jrow:not(.keep)>.fig{flex:none;width:100%}.jrow.keep{gap:12px}}
+.media-pair + .text{margin-top:48px}
+@media(max-width:700px){.jrow:not(.keep)>.fig.vsmall video{max-width:268px!important;margin:0 auto}}
