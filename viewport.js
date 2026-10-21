@@ -349,10 +349,26 @@ function levels(){if(!actx)return;gains.forEach((g,i)=>g.gain.setTargetAtTime(pl
 
 // ---------------- 方位小工具、統計、主迴圈
 const gz=$('gizmo'),gc=gz.getContext('2d');
+// 方位小工具（像 Blender）：正軸實心圓＋字母、負軸空心圓；平面版可點：Z→XY 作品、X→YZ 研究與合作、Y→XZ 早期作品，點目前這一軸回到全部
+const GAX=[['X',new THREE.Vector3(1,0,0),'#b05a5a',1],['Y',new THREE.Vector3(0,0,Z?1:-1),'#6e9150',2],['Z',new THREE.Vector3(0,1,0),'#5a74a8',0]];
+let gzHot=null,gzPts=[];
 function gizmo(){gc.clearRect(0,0,168,168);const m=new THREE.Matrix4().extractRotation(camera.matrixWorldInverse);
-  [['X',new THREE.Vector3(1,0,0),'#b05a5a'],['Y',new THREE.Vector3(0,0,Z?1:-1),'#6e9150'],['Z',new THREE.Vector3(0,1,0),'#5a74a8']].map(([n,v,c])=>[n,(Z?v.applyQuaternion(world.quaternion):v).applyMatrix4(m),c]).sort((a,b)=>a[1].z-b[1].z)
-  .forEach(([n,v,c])=>{const x=84+v.x*56,y=84-v.y*56;gc.strokeStyle=c;gc.lineWidth=3;gc.beginPath();gc.moveTo(84,84);gc.lineTo(x,y);gc.stroke();gc.fillStyle=c;gc.beginPath();gc.arc(x,y,13,0,7);gc.fill();
-    gc.fillStyle='#111';gc.font='bold 15px "IBM Plex Mono",monospace';gc.textAlign='center';gc.textBaseline='middle';gc.fillText(n,x,y+1)})}
+  if(Z&&gzHot!==null||gz.matches(':hover')&&Z){gc.fillStyle='rgba(255,255,255,0.07)';gc.beginPath();gc.arc(84,84,80,0,7);gc.fill()}
+  const pts=[];GAX.forEach(([n,v,c,z])=>{const w=(Z?v.clone().applyQuaternion(world.quaternion):v.clone()).applyMatrix4(m);pts.push({n,v:w,c,z,neg:false},{n:'-'+n,v:w.clone().negate(),c,z,neg:true})});
+  pts.sort((a,b)=>a.v.z-b.v.z);gzPts=[];
+  pts.forEach(p=>{const x=84+p.v.x*58,y=84-p.v.y*58,hot=gzHot===p.n;p.x=x;p.y=y;gzPts.push(p);
+    if(!p.neg){gc.strokeStyle=p.c;gc.lineWidth=3;gc.beginPath();gc.moveTo(84,84);gc.lineTo(x,y);gc.stroke()}
+    gc.beginPath();gc.arc(x,y,p.neg?11:13,0,7);
+    if(p.neg){gc.fillStyle=hot?p.c:'rgba(30,30,30,0.85)';gc.fill();gc.strokeStyle=p.c;gc.lineWidth=2.5;gc.stroke()}
+    else{gc.fillStyle=p.c;gc.fill();if(hot){gc.strokeStyle='#fff';gc.lineWidth=2.5;gc.stroke()}}
+    if(!p.neg||hot){gc.fillStyle=p.neg?'#fff':'#111';gc.font='bold '+(p.neg?12:15)+'px "IBM Plex Mono",monospace';gc.textAlign='center';gc.textBaseline='middle';gc.fillText(p.n,x,y+1)}})}
+function gzHit(e){const r=gz.getBoundingClientRect(),x=(e.clientX-r.left)*168/r.width,y=(e.clientY-r.top)*168/r.height;let best=null,bd=1e9;
+  gzPts.forEach(p=>{const d=Math.hypot(p.x-x,p.y-y);if(d<16&&(d<bd||(d===bd&&!p.neg))){bd=d;best=p}});return best}
+if(Z){gz.style.pointerEvents='auto';gz.classList.add('zg');
+  gz.addEventListener('pointermove',e=>{const h=gzHit(e);gzHot=h?h.n:null;gz.style.cursor=h?'pointer':'default';
+    gz.title=h?(h.n.replace('-','−')+'：'+(h.z===cz?U.all:['XY  ','YZ  ','XZ  '][h.z]+Z[h.z].split('　')[0])):''});
+  gz.addEventListener('pointerleave',()=>{gzHot=null});
+  gz.addEventListener('click',e=>{const h=gzHit(e);if(!h)return;const z=h.z===cz?-1:h.z;const b=document.querySelectorAll('.ztabs button')[z+1];b&&b.click()})}
 function stats(){const v=items.reduce((n,it)=>n+it.meshes.reduce((a,m)=>a+m.geometry.attributes.position.count,0),0);$('stat').textContent=U.stats.replace('{n}',W.length).replace('{name}',D.name)}
 function resize(){const r=view.getBoundingClientRect();if(!r.width||!r.height)return;  // 視窗被隱藏時不更新，避免鏡頭比例變成無效值
   renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();controls.maxDistance=homePos().distanceTo(homeTarget())*1.6}
