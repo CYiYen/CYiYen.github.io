@@ -260,3 +260,4 @@ header.top nav .lang{color:var(--mid)}
 .about .ab-id .portrait{grid-area:pic;align-self:end;display:block;width:170px;height:auto}
 .about .ab-id h1{grid-area:name;margin-top:0;align-self:end}.about .ab-id .lede{grid-area:lede;margin-bottom:0}
 @media(max-width:560px){.about .ab-id{grid-template-areas:"pic name" "lede lede";column-gap:18px}.about .ab-id .portrait{width:112px}.about .ab-id .lede{margin-top:20px}}
+.prow{display:flex;flex-wrap:wrap;gap:22px 16px;align-items:flex-start;align-content:flex-start}.prow>.fig{flex:none;width:calc(var(--a)*var(--ph));max-width:100%;margin:0}.prow>.fig img,.prow>.fig video{display:block;width:100%!important;height:auto;max-width:none!important}   /* 協作專案：所有圖同高 */
