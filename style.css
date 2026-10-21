@@ -240,5 +240,7 @@ header.top nav .lang{color:var(--mid)}
 /* 影片圖（2026-10-21）：figs 裡的 .mp4；vsmall＝畫質低的直式手機影片，小尺寸顯示 */
 .fig.vid video{display:block;width:100%;height:auto;background:#000}.fig.vsmall video{max-width:268px}
 .snd-note{color:var(--mid)}.cue-vid{margin:40px 0 8px}.cue-vid .fig{margin:0}
+.media-pair{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}.media-pair .fig{margin:0}
+@media(max-width:700px){.media-pair{grid-template-columns:1fr}}
 @media(max-width:760px){.cues{grid-template-columns:1fr}}
 .hcap{flex:0 0 100%;margin-top:8px;color:var(--mid);font-size:12px}  /* 主圖說明要自成一列，不能擠在圖旁邊（2026-10-14 修） */
