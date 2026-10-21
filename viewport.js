@@ -7,10 +7,13 @@ import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const D=window.PORTFOLIO, W=D.works;
-// 三區版（2026-10-21 小樣 C）：作品／研究與合作／早期作品排成同一條展台，依重要程度由大到小（ZS）；全部是灰色模型。
-// 上方分頁：全部＝看整排，其餘三個鏡頭橫移到那一區。沒有 zones 資料時與原版完全相同
-const Z=D.zones||null,ZS=[1,0.66,0.48],ROWN=Z?[0,1,2].map(z=>W.filter(w=>w.zone===z).length):[W.length];
-let cz=0;   // 目前所在的區；-1＝全部（預設停在作品區）
+// 座標平面展場（2026-10-21 使用者：以 XY、YZ、XZ 為平面；分頁名稱維持「作品／研究與合作／早期作品」）
+// 地板＝XY 放作品、左牆＝YZ 放研究與合作、後牆＝XZ 放早期作品，組成房間的一角。選分頁時整個角落繞對角線 (1,1,1) 轉 120°，
+// 選到的平面轉成地板、上面的作品跟著轉正；其他兩類的模型完全隱藏（使用者：不然看起來很亂）。沒有 zones 資料時與原版完全相同
+const Z=D.zones||null,ZS=[1,0.66,0.48];
+const PLANES=[['XY',Z?Z[0].split('　')[0]:''],['YZ',Z?Z[1].split('　')[0]:''],['XZ',Z?Z[2].split('　')[0]:'']];   // 類別 → 平面：0 作品＝XY、1 研究與合作＝YZ、2 早期作品＝XZ
+const ROWN=Z?[0,1,2].map(p=>W.filter(w=>w.zone===p).length):[W.length];
+let cz=-1;   // 目前的平面；-1＝全部
 const pending=new URLSearchParams(location.hash.slice(1)).get('sel');
 const PB=D.base||'';  // 英文站的頁面在 en/，頁面連結要加前綴（資產靠 <base href="../">）
 const U=Object.assign({about:'關於',openCv:'開啟簡歷　About →',howtoH:'操作',howto:'拖曳：旋轉視角　滾輪：縮放<br>點選作品：顯示作品資訊<br>再次點選：開啟作品頁<br>雕塑工具：按住拖曳可推動模型表面，放開後自動復原',openWork:'開啟作品頁 →',orTab:'亦可再次點選模型或按 Tab 鍵。',sound:'聲音',stop:'■ 停止播放',play:'▶ 播放 Beacon Silence 七聲部',playNote:'播放時，游標移至光束上即可遮斷該道光，對應聲部隨之靜音，與展場中的機制相同。',basics:'基本資料',kind:'類型',medium:'媒材',shown:'展出',role:'分工',model:'模型',modelOrig:'作者的原始 Blender 模型',modelToy:'示意模型（本作無原始 3D 檔）',all:'全部',photos:'照片',none:'無',editMode:'<b>Edit Mode</b>　作品頁　▾',browse:'瀏覽　▾',stats:'共 {n} 件作品　|　{name} 2026',hint:'拖曳：旋轉視角　·　點選：作品資訊　·　再次點選：開啟作品頁',hintSculpt:'雕塑工具：點選作品以對準，再按住拖曳推動表面（放開後自動復原）',aimed:'已對準。按住拖曳即可推動表面',selectFirst:'請先點選作品，再按此處開啟作品頁（Edit Mode）',keysToggle:'開／關按鍵顯示',keysLabel:'按鍵顯示',act:{'Tab':'開啟作品頁','Esc':'取消選取','S':'雕塑工具','Q':'選取工具','.':'對準作品','←':'上一件','→':'下一件'},drag:['旋轉視角','縮放','平移'],btn:['左鍵','中鍵','右鍵'],dragWord:'拖曳',touch:'觸控',touchAct:'點選／拖曳轉動',key:'按鍵 ',sculpt:'雕塑',btnAct:['點選作品','拖曳縮放','拖曳平移'],push:'推動表面',wheel:'滾輪 ',zoomIn:'放大',zoomOut:'縮小'},D.ui||{});  // 介面文字：中文為預設，英文站由 build.py 經 PORTFOLIO.ui 覆蓋
@@ -33,9 +36,9 @@ if(CLAY){renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftSh
 // 消隱：只有游標的光照到的地方才浮現
 const torch=new THREE.SpotLight(0xffffff,FADE?55:0,0,0.17,0.9,1.2);torch.position.set(0,9,10);scene.add(torch);scene.add(torch.target);
 const rim=new THREE.DirectionalLight(0xffffff,FADE?0:0.5);rim.position.set(-6,4,-6);scene.add(rim);
-scene.add(new THREE.GridHelper(80,80,CLAY?0xcfc6b9:FADE?0x141414:0x3f3f3f,CLAY?0xd8d0c4:FADE?0x0f0f0f:0x363636));
+if(!D.zones)scene.add(new THREE.GridHelper(80,80,CLAY?0xcfc6b9:FADE?0x141414:0x3f3f3f,CLAY?0xd8d0c4:FADE?0x0f0f0f:0x363636));
 const axis=(a,b,c)=>{const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),new THREE.LineBasicMaterial({color:c}));scene.add(l)};
-if(!FADE){axis(new THREE.Vector3(-40,0.002,0),new THREE.Vector3(40,0.002,0),CLAY?0xc49a8a:0x8a4a4a);axis(new THREE.Vector3(0,0.002,-40),new THREE.Vector3(0,0.002,40),CLAY?0xa3b393:0x5b7a45)}
+if(!FADE&&!D.zones){axis(new THREE.Vector3(-40,0.002,0),new THREE.Vector3(40,0.002,0),CLAY?0xc49a8a:0x8a4a4a);axis(new THREE.Vector3(0,0.002,-40),new THREE.Vector3(0,0.002,40),CLAY?0xa3b393:0x5b7a45)}
 
 // 陶土：用程式畫一張「陶土球」的光影圖（matcap），模型套上就有霧面陶土的質感，不需要貼圖座標
 function clayMatcap(){const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');
@@ -134,14 +137,16 @@ function normalize(obj,size,maxH=2.3){const b=new THREE.Box3().setFromObject(obj
 
 const draco=new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/');
 const loader=new GLTFLoader().setDRACOLoader(draco),items=[],GAP=3.9,span=W.length-1,PLINTH=0.14;
-// 每件的 x：同一區內間距 GAP×縮放，區與區之間多空一點；整排置中
-const XS=[],ZB=[[0,0],[0,0],[0,0]];
-if(Z){let x=0;[0,1,2].forEach(z=>{const st=GAP*ZS[z];let first=true;W.forEach((w,i)=>{if(w.zone!==z)return;if(!first)x+=st;else if(z)x+=GAP*0.5+st*0.5+GAP*ZS[z-1]*0.5;XS[i]=x;if(first)ZB[z][0]=x;ZB[z][1]=x;first=false})});
-  const mid=(ZB[0][0]-GAP/2+ZB[2][1]+GAP*ZS[2]/2)/2;XS.forEach((v,i)=>XS[i]=v-mid);ZB.forEach(b=>{b[0]-=mid;b[1]-=mid})}
-const ALLHALF=Z?Math.max(-ZB[0][0]+GAP/2,ZB[2][1]+GAP*ZS[2]/2):span*GAP/2;
-function slot(w,i){if(!Z)return new THREE.Vector3((i-span/2)*GAP,0,0);return new THREE.Vector3(XS[i],0,0)}
+// 每個平面在「轉成地板時」的座標裡排版：後排 ceil(n/2) 件、前排其餘交錯；LS＝平面邊長
+const LS=14,world=new THREE.Group();scene.add(world);
+const QR=[0,1,2].map(k=>new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,1,1).normalize(),k*2*Math.PI/3)),QI=QR.map(q=>q.clone().invert());
+const LP=[];
+if(Z)[0,1,2].forEach(p=>{const ids=W.map((w,i)=>i).filter(i=>W[i].zone===p),n=ids.length;
+  const cols=3,rows=Math.ceil(n/cols),sp=GAP*1.08*Math.max(ZS[p],0.72);   // 整齊的格狀：每排 3 件、等距，最後一排置中；整組放在平面正中央
+  ids.forEach((i,k)=>{const r=Math.floor(k/cols),c=k%cols,inRow=Math.min(cols,n-r*cols);LP[i]=new THREE.Vector3(LS/2+(c-(inRow-1)/2)*sp,0,LS/2+(r-(rows-1)/2)*sp*1.45)})});   // 前後排拉開，前排的名字不會壓到後排
+function slot(w,i){if(!Z)return new THREE.Vector3((i-span/2)*GAP,0,0);return LP[i].clone().applyQuaternion(QI[w.zone])}
 W.forEach((w,i)=>{
-  const holder=new THREE.Group();holder.position.copy(slot(w,i));if(Z)holder.scale.setScalar(ZS[w.zone]);scene.add(holder);
+  const holder=new THREE.Group();holder.position.copy(slot(w,i));if(Z){holder.scale.setScalar(ZS[w.zone]);holder.quaternion.copy(QI[w.zone]);world.add(holder)}else scene.add(holder);
   const wide=w.slug==='beacon-silence',pw=wide?3.6:3.0;   // 展台：每件作品一樣的低台座
   const plinth=new THREE.Mesh(new RoundedBoxGeometry(pw,PLINTH,wide?1.5:3.0,4,0.05),new THREE.MeshStandardMaterial({color:CLAY?0xd9d0c3:FADE?0x0c0c0c:0x3a3a3a,roughness:0.9}));
   if(CLAY)plinth.material=new THREE.MeshMatcapMaterial({matcap:MATCAP,color:0xe9e2d8});
@@ -184,7 +189,7 @@ function makeBeams(it){const ms=[];it.root.traverse(o=>{if(o.isMesh&&/Motor/i.te
 const $=id=>document.getElementById(id),tree=$('tree'),labels=$('labels'),track=$('track'),pbody=$('pbody'),phead=$('phead');
 tree.querySelectorAll('[data-i]').forEach(el=>{el.onclick=()=>select(items[+el.dataset.i],true);
   el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click()}}});   // 鍵盤也能選作品
-items.forEach(it=>{const s=document.createElement('span');s.textContent=it.w.name;labels.appendChild(s);it.label=s});
+items.forEach(it=>{const s=document.createElement('span');s.textContent=it.w.name;if(Z)s.dataset.z=it.w.zone;labels.appendChild(s);it.label=s});
 const Y0=D.y0,Y1=D.y1,pct=y=>(y-Y0)/(Y1-Y0)*100;
 for(let y=Y0;y<=Y1;y++){const t=document.createElement('span');t.className='tick';t.style.left=pct(y)+'%';t.textContent=y;track.appendChild(t)}
 const keys=W.map((w,i)=>{const k=document.createElement('i');k.className='key';k.tabIndex=0;k.setAttribute('role','button');k.setAttribute('aria-label',w.name+'，'+w.year);
@@ -219,23 +224,36 @@ function select(it,fly){
   tree.querySelectorAll('[data-i]').forEach(el=>el.classList.toggle('on',items[+el.dataset.i]===it));
   keys.forEach((k,i)=>k.classList.toggle('on',items[i]===it));
   $('vsel').textContent=it?it.w.name:U.none;
-  if(it&&Z&&cz>=0&&it.w.zone!==cz)setZone(it.w.zone,false);
-  if(it){outline(it,true);phead.style.left=pct(it.w.year)+'%';phead.dataset.y=it.w.year;if(fly)frameOn(it,1);history.replaceState(null,'',location.pathname+'#sel='+it.w.slug);prefetch(it.w.slug)}
+  const turn=it&&Z&&it.w.zone!==cz;if(turn)setZone(it.w.zone,true,fly?()=>frameOn(it,1):null);
+  if(it){outline(it,true);phead.style.left=pct(it.w.year)+'%';phead.dataset.y=it.w.year;if(fly&&!turn)frameOn(it,1);history.replaceState(null,'',location.pathname+'#sel='+it.w.slug);prefetch(it.w.slug)}
   else history.replaceState(null,'',location.pathname);
   props();stats();
 }
 let anim=null;
 function frameOn(it,zoom,then){const b=new THREE.Box3().setFromObject(it.holder),c=new THREE.Vector3(),s=new THREE.Vector3();b.getCenter(c);b.getSize(s);
-  const r=Math.max(s.x,s.y,s.z)*1.7*zoom+1.4;anim={t:0,dur:then?0.55:0.9,p0:camera.position.clone(),t0:controls.target.clone(),p1:c.clone().add(new THREE.Vector3(0.12,0.42,1).normalize().multiplyScalar(r)),t1:c.clone(),then}}
-const zk=z=>Z&&z>=0?ZS[z]:1;
-function homeTarget(z=cz){return new THREE.Vector3(Z&&z>=0?(ZB[z][0]+ZB[z][1])/2:0,0.8*zk(z),0)}
-function zHalf(z){return Z&&z>=0?Math.max((ZB[z][1]-ZB[z][0])/2,GAP*ZS[z])+2.6*ZS[z]:ALLHALF+2.6}
-function homePos(z=cz){const half=zHalf(z),hf=Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*camera.aspect),d=half/Math.tan(hf)*1.08,el=THREE.MathUtils.degToRad(17);
-  return homeTarget(z).add(new THREE.Vector3(0,Math.sin(el)*d,Math.cos(el)*d))}
+  const r=Math.max(s.x,s.y,s.z)*1.7*zoom+1.4;anim={t:0,dur:then?0.55:0.9,p0:camera.position.clone(),t0:controls.target.clone(),p1:c.clone().add(new THREE.Vector3(0.12,0.42,1).normalize().applyAxisAngle(new THREE.Vector3(0,1,0),Z?0:it.holder.rotation.y).multiplyScalar(r)),t1:c.clone(),then}}
+// 平面視角：作品都在地板上，鏡頭從正前方略偏右、仰角 24° 看；全部：從房間角落的對角方向看三個平面
+function zoneBox(z){const b=new THREE.Box3();
+  if(z<0){b.min.set(-0.5,0,-0.5);b.max.set(LS+0.5,LS+0.5,LS+0.5);return b}
+  W.forEach((w,i)=>{if(w.zone!==z)return;const k=ZS[w.zone],p=LP[i];b.expandByPoint(new THREE.Vector3(p.x-1.6*k,0,p.z-1.6*k));b.expandByPoint(new THREE.Vector3(p.x+1.6*k,2.4*k,p.z+1.6*k))});return b}
+function zoneDir(z){return z<0?new THREE.Vector3(1,1.05,1).normalize():new THREE.Vector3(0,Math.sin(THREE.MathUtils.degToRad(36)),Math.cos(THREE.MathUtils.degToRad(36)))}   // 分類視角：正面置中、仰角 36°
+function homeTarget(z=cz){if(!Z)return new THREE.Vector3(0,0.8,0);const c=zoneBox(z).getCenter(new THREE.Vector3());if(z>=0)c.y=0.8;else c.multiplyScalar(0.9);return c}
+const _fc=new THREE.PerspectiveCamera();
+function homePos(z=cz){
+  if(!Z){const half=span*GAP/2+2.6,hf=Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*camera.aspect),el=THREE.MathUtils.degToRad(17),d=half/Math.tan(hf)*1.08;
+    return homeTarget(z).add(new THREE.Vector3(0,Math.sin(el)*d,Math.cos(el)*d))}
+  // 沿鏡頭方向往後退，找剛好把整區框進畫面的距離（二分搜尋）
+  const t=homeTarget(z),dir=zoneDir(z),b=zoneBox(z),P=[];for(let k=0;k<8;k++)P.push(new THREE.Vector3(k&1?b.max.x:b.min.x,k&2?b.max.y:b.min.y,k&4?b.max.z:b.min.z));
+  _fc.copy(camera);let lo=1,hi=300;
+  for(let n=0;n<28;n++){const m=(lo+hi)/2;_fc.position.copy(t).addScaledVector(dir,m);_fc.lookAt(t);_fc.updateMatrixWorld();
+    const ok=P.every(p=>{const v=p.clone().project(_fc);return v.z<1&&Math.abs(v.x)<0.86&&Math.abs(v.y)<0.8});if(ok)hi=m;else lo=m}
+  return t.clone().addScaledVector(dir,hi)}
 function frameAll(){anim={t:0,dur:0.9,p0:camera.position.clone(),t0:controls.target.clone(),p1:homePos(),t1:homeTarget()}}
-// 切換區：分頁亮起、鏡頭橫移到那一排（fly＝false 時只換分頁，由呼叫者自己決定鏡頭）
-function setZone(z,fly){if(!Z)return;cz=z;document.querySelectorAll('.ztabs button').forEach((b,k)=>b.classList.toggle('on',k===z+1));view.classList.toggle('zall',z<0);
-  if(fly){anim={t:0,dur:1.1,p0:camera.position.clone(),t0:controls.target.clone(),p1:homePos(z),t1:homeTarget(z)}}resize()}
+// 切換平面：分頁亮起；整個角落轉到該平面朝上（spin），鏡頭同時拉遠再推近（arc）
+let spin=null;
+function setZone(z,fly,then){if(!Z)return;cz=z;document.querySelectorAll('.ztabs button').forEach((b,k)=>b.classList.toggle('on',k===z+1));view.classList.toggle('zall',z<0);view.dataset.cz=z;AXT.forEach(t=>t.visible=z<0);
+  if(z>=0&&world.quaternion.angleTo(QR[z])>1e-3)spin={t:0,dur:1.5,q0:world.quaternion.clone(),q1:QR[z]};
+  if(fly){anim={t:0,dur:spin?1.5:1.1,p0:camera.position.clone(),t0:controls.target.clone(),p1:homePos(z),t1:homeTarget(z),arc:spin?0.45:0,then}}resize()}
 // 進入 Edit Mode：鏡頭推近，畫面切到作品頁
 // 進入作品（Edit Mode）的轉場：模型切成線框 → 鏡頭推近 → 從模型位置展開圓形，露出作品照片與名稱 → 換頁（作品頁會接著把照片收進版面）
 let entering=false;
@@ -278,7 +296,7 @@ function setTool(t){tool=t;$('hint').textContent=t==='sculpt'?SCULPT_HINT:BASE_H
 $('tools').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.tool==='frame'){selected?frameOn(selected,1):frameAll();return}setTool(b.dataset.tool)};
 const ray=new THREE.Raycaster();ray.params.Line.threshold=0.06;const ndc=new THREE.Vector2();
 const pick=e=>{const r=canvas.getBoundingClientRect();ndc.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(ndc,camera)};
-const meshes=()=>items.flatMap(i=>i.meshes);
+const meshes=()=>items.filter(i=>i.holder.visible).flatMap(i=>i.meshes);   // 隱藏中的類別點不到
 let down=null,sculpting=false,mouse=null,tapAgain=false,idle=0;
 view.addEventListener('pointerdown',e=>{if(e.target!==canvas)return;down={x:e.clientX,y:e.clientY};
   if(tool==='sculpt'){pick(e);const h=ray.intersectObjects(meshes(),false)[0];
@@ -332,30 +350,49 @@ function levels(){if(!actx)return;gains.forEach((g,i)=>g.gain.setTargetAtTime(pl
 // ---------------- 方位小工具、統計、主迴圈
 const gz=$('gizmo'),gc=gz.getContext('2d');
 function gizmo(){gc.clearRect(0,0,168,168);const m=new THREE.Matrix4().extractRotation(camera.matrixWorldInverse);
-  [['X',new THREE.Vector3(1,0,0),'#b05a5a'],['Y',new THREE.Vector3(0,0,-1),'#6e9150'],['Z',new THREE.Vector3(0,1,0),'#5a74a8']].map(([n,v,c])=>[n,v.applyMatrix4(m),c]).sort((a,b)=>a[1].z-b[1].z)
+  [['X',new THREE.Vector3(1,0,0),'#b05a5a'],['Y',new THREE.Vector3(0,0,Z?1:-1),'#6e9150'],['Z',new THREE.Vector3(0,1,0),'#5a74a8']].map(([n,v,c])=>[n,(Z?v.applyQuaternion(world.quaternion):v).applyMatrix4(m),c]).sort((a,b)=>a[1].z-b[1].z)
   .forEach(([n,v,c])=>{const x=84+v.x*56,y=84-v.y*56;gc.strokeStyle=c;gc.lineWidth=3;gc.beginPath();gc.moveTo(84,84);gc.lineTo(x,y);gc.stroke();gc.fillStyle=c;gc.beginPath();gc.arc(x,y,13,0,7);gc.fill();
     gc.fillStyle='#111';gc.font='bold 15px "IBM Plex Mono",monospace';gc.textAlign='center';gc.textBaseline='middle';gc.fillText(n,x,y+1)})}
 function stats(){const v=items.reduce((n,it)=>n+it.meshes.reduce((a,m)=>a+m.geometry.attributes.position.count,0),0);$('stat').textContent=U.stats.replace('{n}',W.length).replace('{name}',D.name)}
 function resize(){const r=view.getBoundingClientRect();if(!r.width||!r.height)return;  // 視窗被隱藏時不更新，避免鏡頭比例變成無效值
   renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();controls.maxDistance=homePos().distanceTo(homeTarget())*1.6}
-if(Z){const pz=W.find(w=>w.slug===pending);if(pz)cz=pz.zone;
+// 三個平面：淡淡的底色、格線、兩條邊上的軸線，及平面名稱與年代（名稱只在「全部」視角顯示）
+const AXT=[];
+if(Z){const tag=(txt,p,g)=>{const c=document.createElement('canvas'),x=c.getContext('2d');c.width=1024;c.height=96;x.font='500 46px "IBM Plex Mono","Noto Sans TC",monospace';x.fillStyle='#9a9a9a';x.textBaseline='middle';x.fillText(txt,6,48);
+    const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false,sizeAttenuation:false}));sp.scale.set(0.32,0.03,1);   // 固定螢幕大小，遠近都看得清楚
+    sp.center.set(0,0.5);sp.position.copy(p);sp.visible=cz<0;AXT.push(sp);g.add(sp)};
+  [0,1,2].forEach(p=>{const g=new THREE.Group();g.quaternion.copy(QI[p]);world.add(g);
+    const f=new THREE.Mesh(new THREE.PlaneGeometry(LS,LS),new THREE.MeshBasicMaterial({color:CLAY?0xe2dbd0:0x2f2f2f,side:THREE.DoubleSide}));f.rotation.x=-Math.PI/2;f.position.set(LS/2,-0.004,LS/2);g.add(f);
+    const gr=new THREE.GridHelper(LS,LS/2,CLAY?0xd8d0c4:0x363636,CLAY?0xd8d0c4:0x363636);gr.position.set(LS/2,0.002,LS/2);g.add(gr);   // 格線 2 公尺一格、低對比
+    const ed=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(LS,LS)),new THREE.LineBasicMaterial({color:CLAY?0xb9b0a3:0x555555}));ed.rotation.x=-Math.PI/2;ed.position.set(LS/2,0.004,LS/2);g.add(ed);   // 平面邊框
+    tag(PLANES[p][0]+'  '+PLANES[p][1],new THREE.Vector3(LS+0.8,0.05,LS+0.8),g)});
+  const ax=(v,c)=>{const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),v.clone().multiplyScalar(LS+1.5)]),new THREE.LineBasicMaterial({color:c}));world.add(l)};
+  ax(new THREE.Vector3(1,0,0),0x8a4a4a);ax(new THREE.Vector3(0,0,1),0x5b7a45);ax(new THREE.Vector3(0,1,0),0x4a5f8a)}   // X 紅、Y 綠、Z 藍（Blender 的 Z 朝上）
+if(Z){const pz=W.find(w=>w.slug===pending)||W.find(w=>w.slug===window.PF_BACK);   // 從作品頁回來：停在那件作品所在的類別
+  if(pz){cz=pz.zone;world.quaternion.copy(QR[cz])}
   const bar=document.createElement('div');bar.className='ztabs';bar.setAttribute('role','tablist');
-  [U.all,...Z].forEach((n,k)=>{const z=k-1,b=document.createElement('button');b.type='button';b.setAttribute('role','tab');b.innerHTML=`${n.split('　')[0]}<small>${z<0?W.length:ROWN[z]}</small>`;
+  [-1,0,1,2].forEach((n,k)=>{const z=k-1,b=document.createElement('button');b.type='button';b.setAttribute('role','tab');b.innerHTML=z<0?`${U.all}<small>${W.length}</small>`:`${PLANES[z][1]}<small>${ROWN[z]}</small>`;
     b.onclick=()=>{if(selected){outline(selected,false);select(null)}setZone(z,true)};bar.appendChild(b)});view.appendChild(bar)}
 new ResizeObserver(resize).observe(view);resize();camera.position.copy(homePos());controls.target.copy(homeTarget());if(Z)setZone(cz,false);
 props();
 const tmp=new THREE.Vector3();let last=performance.now();
 // 防穿模（2026-10-20）：視點不能平移到地板下或作品列之外；鏡頭若進入任何作品（含台座）外框，就沿視線方向推出去
 const _cb=new THREE.Box3(),_dir=new THREE.Vector3();
-function keepOut(){const t=controls.target,lim=Z?zHalf(cz):span*GAP/2+2.5,cx=homeTarget(cz).x;
-  if(!anim)t.x=THREE.MathUtils.clamp(t.x,cx-lim,cx+lim);t.y=THREE.MathUtils.clamp(t.y,0.3,2.6);t.z=THREE.MathUtils.clamp(t.z,-3,3);
+function keepOut(){const t=controls.target,lim=span*GAP/2+2.5;
+  if(Z){if(!anim){t.x=THREE.MathUtils.clamp(t.x,-2,LS+2);t.z=THREE.MathUtils.clamp(t.z,-2,LS+2)}t.y=THREE.MathUtils.clamp(t.y,0.3,LS)}   // 平面版：鏡頭目標留在房間角落範圍內
+  else{t.x=THREE.MathUtils.clamp(t.x,-lim,lim);t.y=THREE.MathUtils.clamp(t.y,0.3,2.6);t.z=THREE.MathUtils.clamp(t.z,-3,3)}
   if(camera.position.y<0.35)camera.position.y=0.35;
   for(const it of items){if(!it.root)continue;_cb.setFromObject(it.holder).expandByScalar(0.25);
     if(!_cb.containsPoint(camera.position))continue;
     _dir.subVectors(camera.position,t);if(_dir.lengthSq()<1e-6)_dir.set(0,0.4,1);_dir.normalize();
     for(let k=0;k<80&&_cb.containsPoint(camera.position);k++)camera.position.addScaledVector(_dir,0.1)}}
 function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
-  if(anim){anim.t=Math.min(1,anim.t+dt/anim.dur);const k=1-(1-anim.t)**3;camera.position.lerpVectors(anim.p0,anim.p1,k);controls.target.lerpVectors(anim.t0,anim.t1,k);
+  if(Z)items.forEach(it=>{if(!it.root)return;const tg=cz<0||it.w.zone===cz||it===selected?1:0,op=it.op??1;if(Math.abs(tg-op)<0.002)return;   // 分頁視角：其他兩類的模型淡出後隱藏
+    it.op=op+(tg-op)*Math.min(1,dt*5);if(Math.abs(tg-it.op)<0.004)it.op=tg;
+    it.holder.traverse(o=>{if(!o.isMesh)return;const m=o.material;if(m.userData.op0===undefined)m.userData.op0=m.opacity;m.transparent=true;m.opacity=m.userData.op0*it.op;m.depthWrite=it.op>0.5&&m.userData.op0>0.5});it.holder.visible=it.op>0.003});
+  if(spin){spin.t=Math.min(1,spin.t+dt/spin.dur);const k=spin.t<0.5?4*spin.t**3:1-(-2*spin.t+2)**3/2;world.quaternion.slerpQuaternions(spin.q0,spin.q1,k);if(spin.t>=1)spin=null}
+  if(anim){anim.t=Math.min(1,anim.t+dt/anim.dur);const k=anim.arc?(anim.t<0.5?4*anim.t**3:1-(-2*anim.t+2)**3/2):1-(1-anim.t)**3;camera.position.lerpVectors(anim.p0,anim.p1,k);controls.target.lerpVectors(anim.t0,anim.t1,k);
+    if(anim.arc){tmp.subVectors(camera.position,controls.target);camera.position.addScaledVector(tmp,Math.sin(Math.PI*anim.t)*anim.arc)}
     if(anim.t>=1){const f=anim.then;anim=null;f&&f()}}
   if(FADE){let p=null;if(mouse){pick(mouse);const h=ray.intersectObjects(meshes(),false)[0];p=h?h.point:ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),new THREE.Vector3())}
     if(!p&&selected){p=new THREE.Box3().setFromObject(selected.holder).getCenter(new THREE.Vector3())}

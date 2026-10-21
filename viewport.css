@@ -182,3 +182,6 @@ body.theme-clay .kc{background:#f3ede4;border-color:#d9cfc1;color:#3a332c}body.t
 .ztabs button.on{background:#4a4a4a;color:#fff}.ztabs button.on small{color:#bbb}
 @media (max-width:700px){.ztabs{top:84px;left:8px;transform:none}.ztabs button{padding:6px 10px;font-size:12.5px}}
 .view.zall .labels span:not(.on){opacity:0!important}   /* 全部視角：14 件排一排名字會疊在一起，只顯示選取中的 */
+.view[data-cz="0"] .labels span:not([data-z="0"]):not(.on),.view[data-cz="1"] .labels span:not([data-z="1"]):not(.on),.view[data-cz="2"] .labels span:not([data-z="2"]):not(.on){opacity:0!important}   /* 分區視角：只顯示這一區的名字，背景其他區的名字不疊上來 */
+@media(max-width:420px){.ztabs button{padding:6px 7px;font-size:12px;gap:5px}.ztabs button small{font-size:9.5px}}
+.view[data-cz] .labels span{background:none;color:#a8a8a8;letter-spacing:.02em;margin-top:-10px}.view[data-cz] .labels span.on{background:var(--sel);color:#111}   /* 平面版：名字不加底框，畫面乾淨 */
