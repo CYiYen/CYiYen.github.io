@@ -101,7 +101,7 @@
     ov.innerHTML='<div class="base"><img src="'+o.src+'" alt="" style="object-position:'+o.pos+'"></div>';
     var parts=FX[v](ov,o,S[0],S[1]),lead=Math.min.apply(null,parts.map(function(p){return p[2]}));
     parts.forEach(function(p){p[2]-=lead});                                   // 第一片立刻開始動，點下去不會有空檔
-    var tt=document.createElement('div');tt.className='tt';tt.innerHTML='<span>'+(o.label||'Edit Mode')+'</span><b>'+o.title+'</b>';ov.appendChild(tt);
+    var tt=document.createElement('div');tt.className='tt';tt.innerHTML=(o.label?'<span>'+o.label+'</span>':'')+'<b>'+o.title+'</b>';ov.appendChild(tt);
     var end=0;parts.forEach(function(p){end=Math.max(end,p[2]+p[3])});
     // 最後一格：底圖補滿（小眼之間的縫隙等），標題浮上來
     parts.push([ov.firstChild,[{opacity:0},{opacity:1}],end-160,160,'linear']);

@@ -16,7 +16,7 @@ const ROWN=Z?[0,1,2].map(p=>W.filter(w=>w.zone===p).length):[W.length];
 let cz=-1;   // 目前的平面；-1＝全部
 const pending=new URLSearchParams(location.hash.slice(1)).get('sel');
 const PB=D.base||'';  // 英文站的頁面在 en/，頁面連結要加前綴（資產靠 <base href="../">）
-const U=Object.assign({about:'關於',openCv:'開啟簡歷　About →',howtoH:'操作',howto:'拖曳：旋轉視角　滾輪：縮放<br>點選作品：顯示作品資訊<br>再次點選：開啟作品頁<br>雕塑工具：按住拖曳可推動模型表面，放開後自動復原',openWork:'開啟作品頁 →',orTab:'亦可再次點選模型或按 Tab 鍵。',sound:'聲音',stop:'■ 停止播放',play:'▶ 播放 Beacon Silence 七聲部',playNote:'播放時，游標移至光束上即可遮斷該道光，對應聲部隨之靜音，與展場中的機制相同。',basics:'基本資料',kind:'類型',medium:'媒材',shown:'展出',role:'分工',model:'模型',modelOrig:'作者的原始 Blender 模型',modelToy:'示意模型（本作無原始 3D 檔）',all:'全部',photos:'照片',none:'無',editMode:'<b>Edit Mode</b>　作品頁　▾',browse:'瀏覽　▾',stats:'共 {n} 件作品　|　{name} 2026',hint:'拖曳：旋轉視角　·　點選：作品資訊　·　再次點選：開啟作品頁',hintSculpt:'雕塑工具：點選作品以對準，再按住拖曳推動表面（放開後自動復原）',aimed:'已對準。按住拖曳即可推動表面',selectFirst:'請先點選作品，再按此處開啟作品頁（Edit Mode）',keysToggle:'開／關按鍵顯示',keysLabel:'按鍵顯示',act:{'Tab':'開啟作品頁','Esc':'取消選取','S':'雕塑工具','Q':'選取工具','.':'對準作品','←':'上一件','→':'下一件'},drag:['旋轉視角','縮放','平移'],btn:['左鍵','中鍵','右鍵'],dragWord:'拖曳',touch:'觸控',touchAct:'點選／拖曳轉動',key:'按鍵 ',sculpt:'雕塑',btnAct:['點選作品','拖曳縮放','拖曳平移'],push:'推動表面',wheel:'滾輪 ',zoomIn:'放大',zoomOut:'縮小'},D.ui||{});  // 介面文字：中文為預設，英文站由 build.py 經 PORTFOLIO.ui 覆蓋
+const U=Object.assign({about:'關於',openCv:'開啟簡歷　About →',howtoH:'操作',howto:'拖曳：旋轉視角　滾輪：縮放<br>點選作品：顯示作品資訊<br>再次點選：開啟作品頁<br>雕塑工具：按住拖曳可推動模型表面，放開後自動復原',openWork:'開啟作品頁 →',orTab:'亦可再次點選模型或按 Tab 鍵。',sound:'聲音',stop:'■ 停止播放',play:'▶ 播放 Beacon Silence 七聲部',playNote:'播放時，游標移至光束上即可遮斷該道光，對應聲部隨之靜音，與展場中的機制相同。',basics:'基本資料',kind:'類型',medium:'媒材',shown:'展出',role:'分工',model:'模型',modelOrig:'作者的原始 Blender 模型',modelToy:'示意模型（本作無原始 3D 檔）',all:'全部',photos:'照片',none:'無',editMode:'開啟作品頁…',browse:'瀏覽　▾',stats:'共 {n} 件作品　|　{name} 2026',hint:'拖曳：旋轉視角　·　點選：作品資訊　·　再次點選：開啟作品頁',hintSculpt:'雕塑工具：點選作品以對準，再按住拖曳推動表面（放開後自動復原）',aimed:'已對準。按住拖曳即可推動表面',selectFirst:'請先點選作品，再按此處開啟作品頁',keysToggle:'開／關按鍵顯示',keysLabel:'按鍵顯示',act:{'Tab':'開啟作品頁','Esc':'取消選取','S':'雕塑工具','Q':'選取工具','.':'對準作品','←':'上一件','→':'下一件'},drag:['旋轉視角','縮放','平移'],btn:['左鍵','中鍵','右鍵'],dragWord:'拖曳',touch:'觸控',touchAct:'點選／拖曳轉動',key:'按鍵 ',sculpt:'雕塑',btnAct:['點選作品','拖曳縮放','拖曳平移'],push:'推動表面',wheel:'滾輪 ',zoomIn:'放大',zoomOut:'縮小'},D.ui||{});  // 介面文字：中文為預設，英文站由 build.py 經 PORTFOLIO.ui 覆蓋
 const THEME=new URLSearchParams(location.search).get('theme')||D.theme||'';document.body.classList.add('theme-'+(THEME||'base'));
 const CLAY=THEME==='clay',FADE=THEME==='fade';  // 從作品頁回來時要選取的作品
 let selected=null,hovered=null,tool='select',playing=false,actx=null;const gains=[],els=[],blocked=new Set();
@@ -265,7 +265,7 @@ function runEnter(slug,x,y){
   const c=COV[slug];let gone=false;const go=()=>{if(gone)return;gone=true;location.href=PB+slug+'.html'};
   try{sessionStorage.setItem('pf-enter',JSON.stringify({slug,t:Date.now()}))}catch(e){}
   if(!window.PFX||!c||PFX.reduce){go();return}
-  PFX.ready(c[0],400).then(()=>{const ov=PFX.build({slug,src:c[0],pos:c[1],title:c[2],x,y,label:'Edit Mode'});PFX.play(ov,'cover').then(()=>setTimeout(go,40))});
+  PFX.ready(c[0],400).then(()=>{const ov=PFX.build({slug,src:c[0],pos:c[1],title:c[2],x,y});PFX.play(ov,'cover').then(()=>setTimeout(go,40))});
   setTimeout(go,2600)}                                                         // 分頁在背景時動畫不會跑，保底換頁
 function enter(it){if(!it||entering)return;entering=true;$('modeLabel').innerHTML=U.editMode;
   it.meshes.forEach(m=>{m.material.wireframe=true});                          // 像按下 Tab：先看到線框
